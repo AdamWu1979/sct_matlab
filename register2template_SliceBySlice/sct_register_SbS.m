@@ -13,9 +13,9 @@ cd(tmp_folder);
 % register
 sct_reslice src.nii dest.nii
 sct_unix('sct_image -i dest.nii -setorient RPI -o dest.nii')
-sct_unix('sct_register_multimodal -i src_reslice.nii -d dest.nii -p step=1,algo=slicereg2d_translation,slicewise=1,gradStep=5,iter=100,metric=MeanSquares:step=2,slicewise=1,algo=slicereg2d_affine,gradStep=30,iter=100,metric=MeanSquares,detect_outlier=1:step=3,algo=slicereg2d_bsplinesyn,slicewise=1,metric=MeanSquares:step=4,algo=syn,metric=CC,window_length=0,gradStep=0.2,smooth=0.1')
-sct_unix('sct_concat_transfo -d dest_RPI.nii -w step0/step00GenericAffine.mat,step0/step01Warp.nii.gz,warp_src_reslice2dest.nii.gz -o warp_forward.nii.gz')
-sct_unix('sct_concat_transfo -w warp_dest2src_reslice.nii.gz,step0/step01InverseWarp.nii.gz,-step0/step00GenericAffine.mat -d src.nii -o warp_inverse.nii.gz');
+sct_unix('sct_register_multimodal -i src_reslice.nii -d dest_RPI.nii -param step=1,algo=translation,metric=MeanSquares,slicewise=1:step=2,slicewise=1,algo=affine:step=3,algo=bsplinesyn,slicewise=1:step=4,algo=syn,gradStep=0.2,smooth=0.1,metric=CC')
+sct_unix('sct_concat_transfo -d dest_RPI.nii -w step0/step00GenericAffine.mat,step0/step01Warp.nii.gz,warp_src_reslice2dest_RPI.nii.gz -o warp_forward.nii.gz')
+sct_unix('sct_concat_transfo -w warp_dest_RPI2src_reslice.nii.gz,step0/step01InverseWarp.nii.gz,-step0/step00GenericAffine.mat -d src.nii -o warp_inverse.nii.gz');
 
 cd ../
 
