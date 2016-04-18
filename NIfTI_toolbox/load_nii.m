@@ -110,7 +110,7 @@ function nii = load_nii(filename, img_idx, dim5_idx, dim6_idx, dim7_idx, ...
    end
 
    if ~exist('tolerance','var') | isempty(tolerance)
-      tolerance = 1;			% 10 percent
+      tolerance = 0.1;			% 10 percent
    end
 
    if ~exist('preferredForm','var') | isempty(preferredForm)
@@ -121,7 +121,6 @@ function nii = load_nii(filename, img_idx, dim5_idx, dim6_idx, dim7_idx, ...
 
    %  Check file extension. If .gz, unpack it into temp folder
    %
-   if ~exist(filename) && exist([filename '.gz']), filename=[filename '.gz']; end
    if length(filename) > 2 & strcmp(filename(end-2:end), '.gz')
 
       if ~strcmp(filename(end-6:end), '.img.gz') & ...
@@ -183,18 +182,8 @@ function nii = load_nii(filename, img_idx, dim5_idx, dim6_idx, dim7_idx, ...
 
    %  Perform some of sform/qform transform
    %
-   [nii, idem]= xform_nii(nii, tolerance, preferredForm);
-    
-   % if reoriented --> save nifti reoriented
-%    if exist('gzFileName','var')
-%        basename = sct_tool_remove_extension(gzFileName,1);
-%    else
-%        basename = sct_tool_remove_extension(filename,1);
-%    end
-%    if ~idem
-%        save_nii(nii, [basename '_reorient.nii'])
-%    end
-   
+   nii = xform_nii(nii, tolerance, preferredForm);
+
    %  Clean up after gunzip
    %
    if exist('gzFileName', 'var')
@@ -204,12 +193,6 @@ function nii = load_nii(filename, img_idx, dim5_idx, dim6_idx, dim7_idx, ...
       nii.fileprefix = gzFileName(1:end-7);
       rmdir(tmpDir,'s');
    end
-   
-   if isempty(nii.hdr.hist.rot_orient), nii.hdr.hist.rot_orient=[1 2 3]; end
-   if length(nii.hdr.dime.pixdim)>4
-   nii.dims=[nii.hdr.dime.dim(nii.hdr.hist.rot_orient+1) nii.hdr.dime.dim(5:end)];
-   nii.scales=[nii.hdr.dime.pixdim(nii.hdr.hist.rot_orient+1) nii.hdr.dime.pixdim(5:end)];
-   end
-   
+
    return					% load_nii
 

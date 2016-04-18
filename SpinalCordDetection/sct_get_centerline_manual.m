@@ -10,7 +10,7 @@ function m_center_line = sct_get_centerline(fname,interval)
 %     column 3 : slice number
 dbstop if error
 param=struct;
-nii=load_nii(fname); m_volume_raw=nii.img; dims=size(nii.img);
+nii=load_nii_data(fname); m_volume_raw=nii; dims=size(nii);
 if nargin<2,interval=max(round(size(m_volume_raw,3)/10),1); end
 if ~isfield(param,'close'), param.close = 1; end
 if ~isfield(param,'slices'), param.slices = [0 size(m_volume_raw,3)-1]; end
@@ -31,7 +31,7 @@ while strcmp(info{1},'no')
         img_buffer=m_volume(:,:,i);
         if param.close, close all; end
         f = figure(i+1-1);
-        set(f,'Position',[1 1 scrsz(3) scrsz(4)]), imagesc(img_buffer'), colormap gray, axis image
+        set(f,'Position',[1 1 scrsz(3) scrsz(4)]), imagesc(img_buffer',[prctile(img_buffer(:),5), prctile(img_buffer(:),95)]), colormap gray, axis image
         ylabel('y')
         xlabel('x')
         % --------------------

@@ -1,4 +1,4 @@
-function f = choose2(flag,yes,no)
+function f = choose(flag,yes,no)
 
 % function f = choose(flag,yes,no)
 %

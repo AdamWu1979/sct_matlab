@@ -24,8 +24,8 @@ fname_data = [data_path,data_file];
 if isempty(varargin), crop_method='centerline'; else crop_method=varargin{1}; end
 if length(varargin)>1, crop_margin=str2num(varargin{2}); else crop_margin=30; end
 
-nii=load_nii([fname_data data_ext]);
-dims=size(nii.img);
+nii=load_nii_data([fname_data data_ext]);
+dims=size(nii);
 
 % Find which SHELL is running
 disp(['\nFind which SHELL is running...'])
@@ -84,7 +84,7 @@ switch (crop_method)
         for iZ = 1:dims(3)
             % load mask
             fname_mask = [fname_mask_splitZ,numZ{iZ}];
-            mask_nii = load_nii(fname_mask); mask=mask_nii.img;
+            mask_nii = load_nii(fname_mask); mask=mask_nii;
             if length(mask)==1, error('CHECK FILE NAME FOR THE MASK! Exit program.'); end
             % Find the size of the mask
             for i=1:size(mask,3)
