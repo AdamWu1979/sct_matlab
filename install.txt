@@ -1,0 +1,2 @@
+- Open MATLAB
+- launch command pathtool and add sct_matlab folder (and subfolders) to your Matlab path

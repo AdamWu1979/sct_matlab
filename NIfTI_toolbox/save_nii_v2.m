@@ -69,7 +69,10 @@ if islogical(nii), nii = double(nii); if ~exist('datatype','var'), datatype=2; e
 
 if ~isstruct(nii)
     if exist('old_nii_fname','var')
-        nii=make_nii(nii);
+        img = nii;
+        nii = load_nii(old_nii_fname,[],[],[],[],[],1);
+        nii.original.img = unxform_nii(nii, img);
+        nii = nii.original;
     else
         error('error:usage','Usage: save_nii_v2(Matrix, filename, old_nii_fname)\n old_nii_fname is missing: You need to specify a nifti filename from which the header will be copied.')
     end
@@ -142,13 +145,13 @@ end
 write_nii(nii, filetype, fileprefix, old_RGB);
 % reorient in RPI
 
-if ~exist('reorient','var'), reorient=1; end
-if exist('old_nii_fname','var') && reorient
-    [~,orient_dest] = unix(['sct_image -i ' old_nii_fname ' -getorient']); orient_dest=orient_dest(end-3:end-1);
-    unix(['sct_image -i ' fileprefix '.nii -setorient ' orient_dest ' -o ' fileprefix '.nii']);
-    if exist([fileprefix '.nii.gz'],'file'), unix(['rm ' fileprefix '.nii.gz']); end
-    unix(['fslcpgeom ' old_nii_fname ' ' fileprefix '.nii -d']);
-end
+% if ~exist('reorient','var'), reorient=1; end
+% if exist('old_nii_fname','var') && reorient
+%     [~,orient_dest] = unix(['sct_image -i ' old_nii_fname ' -getorient']); orient_dest=orient_dest(end-3:end-1);
+%     unix(['sct_image -i ' fileprefix '.nii -setorient ' orient_dest ' -o ' fileprefix '.nii']);
+%     if exist([fileprefix '.nii.gz'],'file'), unix(['rm ' fileprefix '.nii.gz']); end
+%     unix(['fslcpgeom ' old_nii_fname ' ' fileprefix '.nii -d']);
+% end
 
 %  gzip output file if requested
 %
