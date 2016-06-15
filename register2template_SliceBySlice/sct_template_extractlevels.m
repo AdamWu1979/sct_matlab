@@ -13,7 +13,7 @@ end
 z_lev(z_lev>480)=480;
 
 [templatelist, path]=sct_tools_ls([sct_dir '/data/template/MNI-Poly-AMU*']);
-templatelist{end+1}='../../dev/template/diffusion_template.nii';
+%templatelist{end+1}='../../dev/template/diffusion_template.nii';
 mkdir('template_roi')
 mkdir('template_roi/template')
 for ifile =1:length(templatelist)

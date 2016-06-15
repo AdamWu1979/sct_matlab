@@ -1,23 +1,28 @@
 function dict = dicm_dict(vendor, flds)
+% Return dicom dictionary for specified vendor.
+% 
 % dict = dicm_hdr(vendor, dicmFields);
 % 
-% Return dicom dictionary for specified vendor used by dicm_hdr.m. The
-% vendor is used to assign those vendor-specific private tags for SIEMENS,
+% The vendor is used to assign those vendor-specific private tags for SIEMENS,
 % GE and Philips. Other vendors can be added easily into the file.
 % 
 % If only partial dictionary is needed, the struct fields can be used as
 % the 2nd input.
 % 
-% See also DICM_HDR DICM2NII DICM_IMG
+% See also DICM_HDR, DICM2NII, DICM_IMG
 
-% History (yyyy/mm/dd):
-% 20130823 Write it for dicm2nii.m (xiangrui.li@gmail.com)
-% 20131105 Make DTI parameter names more consistent across vendors.
+% History (yymmdd):
+% 130823 Write it for dicm2nii.m (xiangrui.li@gmail.com)
+% 131105 Make DTI parameter names more consistent across vendors.
+% 141021 Store requested fields, so set dict when switching vendors.
+% 141024 Use LocationsInAcquisition as nSL for all vendors.
+% 141030 Make ScanningSequence & SequenceVariant consistent for vendors.
+% 150114 Add two more CSA header duplicate tags, and more command tags.
 
 if nargin<1, vendor = 'SIEMENS'; end
 dict.vendor = vendor;
 % Shortened items common across vendors from Matlab dicom-dict.txt
-%   group  element vr  name (meaning for the columns in C)
+%    group element vr  name
 C = {   
     '0000' '0002' 'UI' 'AffectedSOPClassUID'
     '0000' '0100' 'US' 'CommandField'
@@ -32,6 +37,7 @@ C = {
     '0002' '0012' 'UI' 'ImplementationClassUID'
     '0002' '0013' 'SH' 'ImplementationVersionName'
     '0002' '0016' 'AE' 'SourceApplicationEntityTitle'
+    '0002' '0100' 'UI' 'PrivateInformationCreatorUID'
     '0008' '0005' 'CS' 'SpecificCharacterSet'
     '0008' '0008' 'CS' 'ImageType'
     '0008' '0012' 'DA' 'InstanceCreationDate'
@@ -50,6 +56,7 @@ C = {
     '0008' '0033' 'TM' 'ContentTime'
     '0008' '0050' 'SH' 'AccessionNumber'
     '0008' '0060' 'CS' 'Modality'
+    '0008' '0064' 'CS' 'ConversionType'
     '0008' '0070' 'LO' 'Manufacturer'
     '0008' '0080' 'LO' 'InstitutionName'
     '0008' '0081' 'ST' 'InstitutionAddress'
@@ -68,6 +75,7 @@ C = {
     '0008' '1050' 'PN' 'PerformingPhysicianName'
     '0008' '1060' 'PN' 'PhysicianReadingStudy'
     '0008' '1070' 'PN' 'OperatorName'
+    '0008' '1080' 'LO' 'AdmittingDiagnosesDescription'
     '0008' '1090' 'LO' 'ManufacturerModelName'
     '0008' '1110' 'SQ' 'ReferencedStudySequence'
     '0008' '1111' 'SQ' 'ReferencedPerformedProcedureStepSequence'
@@ -78,6 +86,7 @@ C = {
     '0008' '1155' 'UI' 'ReferencedSOPInstanceUID'
     '0008' '1160' 'IS' 'ReferencedFrameNumber'
     '0008' '1199' 'SQ' 'ReferencedSOPSequence'
+    '0008' '2112' 'SQ' 'SourceImageSequence'
     '0008' '2218' 'SQ' 'AnatomicRegionSequence'
     '0008' '9007' 'CS' 'FrameType'
     '0008' '9092' 'SQ' 'ReferencedImageEvidenceSequence'
@@ -90,13 +99,17 @@ C = {
     '0008' '9209' 'CS' 'AcquisitionContrast'
     '0010' '0010' 'PN' 'PatientName'
     '0010' '0020' 'LO' 'PatientID'
+    '0010' '0021' 'LO' 'IssuerOfPatientID'
     '0010' '0030' 'DA' 'PatientBirthDate'
     '0010' '0040' 'CS' 'PatientSex'
+	'0010' '0050' 'SQ' 'PatientInsurancePlanCodeSequence'
     '0010' '1000' 'LO' 'OtherPatientID'
     '0010' '1010' 'AS' 'PatientAge'
     '0010' '1020' 'DS' 'PatientSize'
     '0010' '1030' 'DS' 'PatientWeight'
+	'0010' '1040' 'LO' 'PatientAddress'
     '0010' '1080' 'LO' 'MilitaryRank'
+    '0010' '2110' 'LO' 'ContrastAllergies'
     '0010' '21B0' 'LT' 'AdditionalPatientHistory'
     '0010' '21C0' 'US' 'PregnancyStatus'
     '0010' '4000' 'LT' 'PatientComments'
@@ -110,6 +123,7 @@ C = {
     '0018' '0024' 'SH' 'SequenceName'
     '0018' '0025' 'CS' 'AngioFlag'
     '0018' '0050' 'DS' 'SliceThickness'
+    '0018' '0060' 'DS' 'KVP'
     '0018' '0080' 'DS' 'RepetitionTime'
     '0018' '0081' 'DS' 'EchoTime'
     '0018' '0082' 'DS' 'InversionTime'
@@ -120,19 +134,35 @@ C = {
     '0018' '0087' 'DS' 'MagneticFieldStrength'
     '0018' '0088' 'DS' 'SpacingBetweenSlices'
     '0018' '0089' 'IS' 'NumberOfPhaseEncodingSteps'
+    '0018' '0090' 'DS' 'DataCollectionDiameter'
     '0018' '0091' 'IS' 'EchoTrainLength'
     '0018' '0093' 'DS' 'PercentSampling'
     '0018' '0094' 'DS' 'PercentPhaseFieldOfView'
     '0018' '0095' 'DS' 'PixelBandwidth'
     '0018' '1000' 'LO' 'DeviceSerialNumber'
+    '0018' '1012' 'DA' 'DateOfSecondaryCapture'
+    '0018' '1014' 'TM' 'TimeOfSecondaryCapture'
     '0018' '1020' 'LO' 'SoftwareVersion'
     '0018' '1030' 'LO' 'ProtocolName'
+    '0018' '1050' 'DS' 'SpatialResolution'
     '0018' '1060' 'DS' 'TriggerTime'
     '0018' '1063' 'DS' 'FrameTime'
     '0018' '1088' 'IS' 'HeartRate'
     '0018' '1090' 'IS' 'CardiacNumberOfImages'
     '0018' '1094' 'IS' 'TriggerWindow'
     '0018' '1100' 'DS' 'ReconstructionDiameter'
+    '0018' '1110' 'DS' 'DistanceSourceToDetector'
+    '0018' '1111' 'DS' 'DistanceSourceToPatient'
+    '0018' '1120' 'DS' 'GantryDetectorTilt'
+    '0018' '1130' 'DS' 'TableHeight'
+    '0018' '1140' 'CS' 'RotationDirection'
+    '0018' '1150' 'IS' 'ExposureTime'
+    '0018' '1151' 'IS' 'XrayTubeCurrent'
+    '0018' '1152' 'IS' 'Exposure'
+    '0018' '1160' 'SH' 'FilterType'
+    '0018' '1170' 'IS' 'GeneratorPower'
+    '0018' '1190' 'DS' 'FocalSpot'
+    '0018' '1210' 'SH' 'ConvolutionKernel'
     '0018' '1200' 'DA' 'DateOfLastCalibration'
     '0018' '1201' 'TM' 'TimeOfLastCalibration'
     '0018' '1250' 'SH' 'ReceiveCoilName'
@@ -221,7 +251,7 @@ C = {
     '0018' '9117' 'SQ' 'MRDiffusionSequence'
     '0018' '9119' 'SQ' 'MRAveragesSequence'
     '0018' '9125' 'SQ' 'MRFOVGeometrySequence'
-	'0018' '9147' 'CS' 'DiffusionAnisotropyType'
+    '0018' '9147' 'CS' 'DiffusionAnisotropyType'
     '0018' '9151' 'DT' 'FrameReferenceDatetime'
     '0018' '9152' 'SQ' 'MRMetaboliteMapSequence'
     '0018' '9155' 'FD' 'ParallelReductionFactorOutOfPlane'
@@ -252,7 +282,10 @@ C = {
     '0020' '0011' 'IS' 'SeriesNumber'
     '0020' '0012' 'IS' 'AcquisitionNumber'
     '0020' '0013' 'IS' 'InstanceNumber'
+    '0020' '0020' 'CS' 'PatientOrientation'
+    '0020' '0030' 'DS' 'ImagePosition'
     '0020' '0032' 'DS' 'ImagePositionPatient'
+    '0020' '0035' 'DS' 'ImageOrientation'
     '0020' '0037' 'DS' 'ImageOrientationPatient'
     '0020' '0052' 'UI' 'FrameOfReferenceUID'
     '0020' '0100' 'IS' 'TemporalPositionIdentifier'
@@ -269,7 +302,7 @@ C = {
     '0020' '4000' 'LT' 'ImageComments'
     '0020' '9056' 'SH' 'StackID'
     '0020' '9057' 'UL' 'InStackPositionNumber'
-	'0020' '9071' 'SQ' 'FrameAnatomySequence'
+    '0020' '9071' 'SQ' 'FrameAnatomySequence'
     '0020' '9072' 'CS' 'FrameLaterality'
     '0020' '9111' 'SQ' 'FrameContentSequence'
     '0020' '9113' 'SQ' 'PlanePositionSequence'
@@ -287,6 +320,7 @@ C = {
     '0020' '9421' 'LO' 'DimensionDescriptionLabel'
     '0028' '0002' 'US' 'SamplesPerPixel'
     '0028' '0004' 'CS' 'PhotometricInterpretation'
+    '0028' '0006' 'US' 'PlanarConfiguration'
     '0028' '0008' 'IS' 'NumberOfFrames'
     '0028' '0009' 'AT' 'FrameIncrementPointer'
     '0028' '000A' 'AT' 'FrameDimensionPointer'
@@ -302,6 +336,7 @@ C = {
     '0028' '0105' 'US' 'LargestValidPixelValue'
     '0028' '0106' 'US' 'SmallestImagePixelValue'
     '0028' '0107' 'US' 'LargestImagePixelValue'
+    '0028' '0120' 'SS' 'PixelPaddingValue'
     '0028' '0301' 'CS' 'BurnedInAnnotation'
     '0028' '1050' 'DS' 'WindowCenter'
     '0028' '1051' 'DS' 'WindowWidth'
@@ -310,7 +345,15 @@ C = {
     '0028' '1054' 'LO' 'RescaleType'
     '0028' '1055' 'LO' 'WindowCenterWidthExplanation'
     '0028' '1080' 'LT' 'GrayScale'
+    '0028' '1101' 'US' 'RedPaletteColorLookupTableDescriptor'
+    '0028' '1102' 'US' 'GreenPaletteColorLookupTableDescriptor'
+    '0028' '1103' 'US' 'BluePaletteColorLookupTableDescriptor'
+    '0028' '1201' 'OW' 'RedPaletteColorLookupTableData'
+    '0028' '1202' 'OW' 'GreenPaletteColorLookupTableData'
+    '0028' '1203' 'OW' 'BluePaletteColorLookupTableData'
     '0028' '2110' 'CS' 'LossyImageCompression'
+    '0028' '2112' 'DS' 'LossyImageCompressionRatio'
+    '0028' '2114' 'CS' 'LossyImageCompressionMethod'
     '0028' '3003' 'LO' 'LUTExplanation'
     '0028' '9001' 'UL' 'DataPointRows'
     '0028' '9002' 'UL' 'DataPointColumns'
@@ -347,6 +390,7 @@ C = {
     '0040' '08EA' 'SQ' 'MeasurementUnitsCodeSequence'
     '0040' '1001' 'SH' 'RequestedProcedureID'
     '0040' '1400' 'LT' 'RequestedProcedureComments'
+    '0040' '2017' 'LO' 'FillerOrderNumberOfImagingServiceRequest'
     '0040' '2400' 'LT' 'ImagingServiceRequestComments'
     '0040' '9096' 'SQ' 'RealWorldValueMappingSequence'
     '0040' '9210' 'SH' 'LUTLabel'
@@ -374,7 +418,7 @@ if strncmpi(vendor, 'SIEMENS', 7)
     C = [C; {
     '0019' '1008' 'CS' 'Private_0019_10xxType'
     '0019' '1009' 'LO' 'Private_0019_10xxVersion'
-    '0019' '100A' 'US' 'NumberOfImagesInMosaic'
+    '0019' '100A' 'US' 'LocationsInAcquisition' % 'NumberOfImagesInMosaic'
     '0019' '100B' 'DS' 'SliceMeasurementDuration'
     '0019' '100C' 'IS' 'B_value'
     '0019' '100D' 'CS' 'DiffusionDirectionality'
@@ -399,6 +443,8 @@ if strncmpi(vendor, 'SIEMENS', 7)
     '0029' '1018' 'CS' 'CSASeriesHeaderType'
     '0029' '1019' 'LO' 'CSASeriesHeaderVersion'
     '0029' '1020' 'OB' 'CSASeriesHeaderInfo'
+    '0029' '1110' 'OB' 'CSAImageHeaderInfo'
+    '0029' '1120' 'OB' 'CSASeriesHeaderInfo'
     '0029' '1131' 'LO' 'PMTFInformation1'
     '0029' '1132' 'UL' 'PMTFInformation2'
     '0029' '1133' 'UL' 'PMTFInformation3'
@@ -419,9 +465,11 @@ if strncmpi(vendor, 'SIEMENS', 7)
     '0051' '1015' 'SH' 'DataFilterText' % not sure
     '0051' '1016' 'LO' 'ImageTypeText'
     '0051' '1017' 'SH' 'SliceThicknessText'
-    '0051' '1019' 'LO' 'ScanOptionsText' }];
+    '0051' '1019' 'LO' 'ScanOptionsText'
+    }];
 elseif strncmpi(vendor, 'GE', 2) 
     C = [C; {
+    '0009' '1001' 'LO' 'FullFidelity'
     '0009' '1002' 'SH' 'SuiteId'
     '0009' '1004' 'SH' 'ProductId'
     '0009' '1027' 'SL' 'ImageActualDate'
@@ -460,11 +508,11 @@ elseif strncmpi(vendor, 'GE', 2)
     '0019' '1095' 'SS' 'AutoPrescanAnalogReceiverGain'
     '0019' '1096' 'SS' 'AutoPrescanDigitalReceiverGain'
     '0019' '1097' 'SL' 'BitmapdefiningCVs'
-	'0019' '1098' 'SS' 'CenterFreqMethod'
+    '0019' '1098' 'SS' 'CenterFreqMethod'
     '0019' '109B' 'SS' 'PulseSequenceMode'
     '0019' '109C' 'LO' 'PulseSequenceName'
     '0019' '109D' 'DT' 'PulseSequenceDate'
-    '0019' '109E' 'LO' 'InternalPulseSequenceName'
+    '0019' '109E' 'LO' 'SequenceName' % 'InternalPulseSequenceName'
     '0019' '109F' 'SS' 'TransmittingCoilType'
     '0019' '10A0' 'SS' 'SurfaceCoilType'
     '0019' '10A1' 'SS' 'ExtremityCoilflag'
@@ -524,6 +572,7 @@ elseif strncmpi(vendor, 'GE', 2)
     '0020' '9302' 'DS' 'ImageOrientationPatient' % but seems used only by GE
     '0020' '930E' 'SQ' 'PlanePositionSequence'
     '0020' '930F' 'SQ' 'PlaneOrientationSequence'
+    '0021' '1003' 'SS' 'SeriesFromWhichPrescribed'
     '0021' '1035' 'SS' 'SeriesFromWhichPrescribed'
     '0021' '1036' 'SS' 'ImageFromWhichPrescribed'
     '0021' '1037' 'SS' 'ScreenFormat'
@@ -567,6 +616,12 @@ elseif strncmpi(vendor, 'GE', 2)
     '0027' '1035' 'SS' 'PlaneType'
     '0027' '1040' 'SH' 'RASletterOfImageLocation'
     '0027' '1041' 'FL' 'ImageLocation'
+    '0027' '1042' 'FL' 'CenterRCoordOfPlaneImage'
+    '0027' '1043' 'FL' 'CenterACoordOfPlaneImage'
+    '0027' '1044' 'FL' 'CenterSCoordOfPlaneImage'
+    '0027' '1045' 'FL' 'NormalRCoord'
+    '0027' '1046' 'FL' 'NormalACoord'
+    '0027' '1047' 'FL' 'NormalSCoord'
     '0027' '1060' 'FL' 'ImageDimensionX'
     '0027' '1061' 'FL' 'ImageDimensionY'
     '0027' '1062' 'FL' 'NumberOfExcitations'
@@ -593,10 +648,11 @@ elseif strncmpi(vendor, 'GE', 2)
     '0043' '1010' 'SS' 'WindowValue'
     '0043' '101C' 'SS' 'GEImageIntegrity'
     '0043' '101D' 'SS' 'LevelValue'
-	'0043' '100F' 'DS' 'Saravghead'
+    '0043' '100F' 'DS' 'Saravghead'
     '0043' '1028' 'OB' 'UniqueImageIden'
     '0043' '1029' 'OB' 'HistogramTables'
     '0043' '102A' 'OB' 'UserDefineData'
+    '0043' '102B' 'SS' 'PrivateScanOptions'
     '0043' '102C' 'SS' 'EffectiveEchoSpacing'
     '0043' '102D' 'SH' 'FilterMode'
     '0043' '102F' 'SS' 'PrivateImageType'
@@ -620,7 +676,7 @@ elseif strncmpi(vendor, 'GE', 2)
     '0043' '1074' 'US' 'NumberOfRestVolumes'
     '0043' '1075' 'US' 'NumberOfActiveVolumes'
     '0043' '1076' 'US' 'NumberOfDummyScans'
-    '0043' '1079' 'US' 'SlicesPerVolume'
+    '0043' '1079' 'US' 'LocationsInAcquisition' % 'SlicesPerVolume'
     '0043' '107A' 'US' 'ExpectedTimePoints'
     '0043' '107B' 'FL' 'RegressorValues'
     '0043' '107C' 'FL' 'DelayAfterSliceGroup'
@@ -640,7 +696,9 @@ elseif strncmpi(vendor, 'GE', 2)
     '0043' '1096' 'CS' 'ContentQualification'
     '0043' '1097' 'LO' 'ImageFilteringParameters'
     '0043' '1098' 'UI' 'ASSETAcquisitionCalibrationSeriesUID'
-    '0043' '109A' 'IS' 'RxStackIdentification' }];
+    '0043' '109A' 'IS' 'RxStackIdentification'
+    '0043' '10AA' 'LO' 'AdditionalFilteringParameters'
+    '0043' '10B3' 'DS' 'AdvancedEddyCorrection' }];
     % SlopInt:
     % 6: b_value 7: private imaging options 2  8: ihtagging  9: ihtagspc
     % 10: ihfcineim  11: ihfcinent  12: Reserved  13: oprtarr 
@@ -654,7 +712,7 @@ elseif strncmpi(vendor, 'Philips', 7)
     C = [C; {
     '2001' '1001' 'FL' 'ChemicalShift'
     '2001' '1002' 'IS' 'ChemicalShiftNumberMR'
-    '2001' '1003' 'FL' 'B_value' % B_factor
+    '2001' '1003' 'FL' 'B_factor'
     '2001' '1004' 'CS' 'DiffusionDirection'
     '2001' '1006' 'CS' 'ImageEnhanced'
     '2001' '1007' 'CS' 'ImageTypeEDES'
@@ -673,7 +731,7 @@ elseif strncmpi(vendor, 'Philips', 7)
     '2001' '1015' 'SS' 'NumberOfLocations'
     '2001' '1016' 'SS' 'NumberOfPCDirections'
     '2001' '1017' 'SL' 'NumberOfPhasesMR'
-    '2001' '1018' 'SL' 'SlicesPerVolume'  % 'NumberOfSlicesMR'
+    '2001' '1018' 'SL' 'LocationsInAcquisition'  % 'NumberOfSlicesMR'
     '2001' '1019' 'CS' 'PartialMatrixScanned'
     '2001' '101A' 'FL' 'PCVelocity'
     '2001' '101B' 'FL' 'PrepulseDelay'
@@ -709,7 +767,7 @@ elseif strncmpi(vendor, 'Philips', 7)
     '2001' '1089' 'DS' 'MRSeriesPercentPhaseFieldOfView' % duplicate, wrong
     '2001' '108A' 'DS' 'MRSeriesPercentSampling' % duplicate, wrong
     '2001' '108B' 'SH' 'MRSeriesTransmittingCoil' % duplicate
-	'2001' '10C8' 'LO' 'ExamCardName'
+    '2001' '10C8' 'LO' 'ExamCardName'
     '2001' '10F1' 'FL' 'ProspectiveMotionCorrection'
     '2001' '10F2' 'FL' 'RetrospectiveMotionCorrection'
     '2005' '1000' 'FL' 'MRImageAngulationAP' 
@@ -826,7 +884,7 @@ elseif strncmpi(vendor, 'Philips', 7)
     '2005' '10B0' 'FL' 'DiffusionDirectionX' % degrees
     '2005' '10B1' 'FL' 'DiffusionDirectionY'
     '2005' '10B2' 'FL' 'DiffusionDirectionZ' 
-    '2005' '10C0' 'CS' 'SeriesScanSequence' % duplicate
+    '2005' '10C0' 'CS' 'SequenceVariant' % 'SeriesScanSequence' % duplicate
     '2005' '1134' 'LT' 'SeriesTransactionUID'
     '2005' '1199' 'UL' 'MRNumberOfRequestExcerpts'
     '2005' '1200' 'UL' 'MRNumberOfSOPCommon'
@@ -899,12 +957,12 @@ elseif strncmpi(vendor, 'Philips', 7)
     '2005' '1402' 'SQ' 'SPSCode'
     '2005' '1403' 'UL' 'MRNumberOfSPSCodes'
     '2005' '1407' 'SS' 'MRNrOfSpecificCharacterSet'
-	'2005' '1409' 'DS' 'RescaleInterceptOriginal'
-	'2005' '140A' 'DS' 'RescaleSlopeOriginal'
-	'2005' '140B' 'LO' 'RescaleTypeOriginal'
+    '2005' '1409' 'DS' 'RescaleInterceptOriginal'
+    '2005' '140A' 'DS' 'RescaleSlopeOriginal'
+    '2005' '140B' 'LO' 'RescaleTypeOriginal'
     '2005' '140E' 'SQ' 'PrivateSharedSq'
     '2005' '140F' 'SQ' 'PrivatePerFrameSq'
-	'2005' '1411' 'UI' 'MFPrivateReferencedSOPInstanceUID'
+    '2005' '1411' 'UI' 'MFPrivateReferencedSOPInstanceUID'
     '2005' '1412' 'IS' 'MRImageDiffBValueNumber'
     '2005' '1413' 'IS' 'MRImageGradientOrientationNumber'
     '2005' '1414' 'SL' 'MRSeriesNrOfDiffBValues'
@@ -947,24 +1005,25 @@ elseif strncmpi(vendor, 'Philips', 7)
     '2005' '1450' 'SS' 'MRNrOfPatientOtherIDs'
     '2005' '1455' 'FD' 'ImageVelocityEncodingDirection'
     '2050' '0020' 'CS' 'PresentationLUTShape' }];
-% elseif strncmpi(vendor, 'OtherVendor', 7)
+% elseif strncmpi(vendor, 'OtherVendor', n)
 end
 
 dict.tag = uint32(hex2dec(strcat(C(:,1), C(:,2))));
-dict.vr = C(:,3); % only needed for implicit VR
+dict.vr = C(:,3); % for implicit VR and some problematic explicit VR
 dict.name = C(:,4);
 
 if nargin>1 && ~isempty(flds) % use only provided fields
     flds = cellstr(flds);
-    ind = [];
-    for i=1:length(flds), 
-        ind = [ind; find(strcmp(flds{i}, dict.name))]; %#ok
+    ind = false(size(dict.tag,1), 1);
+    for i = 1:numel(flds)
+        ind = ind | strcmp(flds{i}, dict.name); % include duplicate
     end
+    dict.fields = flds; % remember the requested fields
     dict.tag  = dict.tag(ind);
     dict.vr   = dict.vr(ind);
     dict.name = dict.name(ind);
 end
 
-[dict.tag, ind] = unique(dict.tag); % sort all according to tag
+[dict.tag, ind] = unique(dict.tag); % sort by tag
 dict.vr = dict.vr(ind);
 dict.name = dict.name(ind);

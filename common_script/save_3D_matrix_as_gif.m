@@ -24,9 +24,9 @@
 % author:  Geert Van Eyndhoven
 % contact: vegeert[at]hotmail[dot]com
 
-function save_3D_matrix_as_gif(filename, matrix, delaytime)
+function save_3D_matrix_as_gif(filename, matrix, delaytime, clim_percentil)
 
-    if(nargin<2 || nargin>3)
+    if(nargin<2 || nargin>4)
         error('incorrect number of input arguments')
     end
     
@@ -34,12 +34,18 @@ function save_3D_matrix_as_gif(filename, matrix, delaytime)
         delaytime = 0.1;
     end
     
+    if nargin<4
+        clim_percentil = [5 95];
+    end
+    
+    matrix = squeeze(double(matrix));
+    
     % adjust matrix to have entries between 1 and 256
     % first make range between 0 and 1
-%     matrix = matrix - min(min(min(matrix)));
-%     matrix = matrix/(max(max(max(matrix))));
-%     % adjust range to be between 1 and 256
-%     matrix = matrix*255 + 1;
+    matrix = matrix - prctile(matrix(:),clim_percentil(1));
+    matrix = matrix/prctile(matrix(:),clim_percentil(2));
+    % adjust range to be between 1 and 256
+    matrix = matrix*255 + 1;
     imwrite(squeeze(matrix(:,:,1)),filename,'gif', 'WriteMode','overwrite','DelayTime',delaytime,'LoopCount',Inf);
     for ii = 2:size(matrix,3)
         imwrite(squeeze(matrix(:,:,ii)),filename,'gif', 'WriteMode','append','DelayTime',delaytime);
