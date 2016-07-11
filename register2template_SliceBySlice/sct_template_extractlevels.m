@@ -22,6 +22,7 @@ for ifile =1:length(templatelist)
     template_roi=make_nii(double(template_roi),[template.hdr.dime.pixdim(2:3) slicethickness],[],[]);
     save_nii_v2(template_roi,['./template_roi/template/' sct_tool_remove_extension(templatelist{ifile},0) '_roi'])
 end
+sct_unix('FSLOUTPUTTYPE=NIFTI; fslmaths ./template_roi/template/MNI-Poly-AMU_WM_roi.nii -mul 0.9 -div 0.6 -add ./template_roi/template/MNI-Poly-AMU_GM_roi.nii -mul 0.6 ./template_roi/template/diffusion_template_roi.nii')
 
 [tractlist, path]=sct_tools_ls([sct_dir '/data/atlas/WMtract*']);
 mkdir('template_roi/atlas')

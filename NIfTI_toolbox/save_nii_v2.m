@@ -71,7 +71,11 @@ if ~isstruct(nii)
     if exist('old_nii_fname','var')
         img = nii;
         nii = load_nii(old_nii_fname,[],[],[],[],[],1);
-        nii.original.img = unxform_nii(nii, img);
+        tmp=zeros(size(img));
+        for it=1:size(img,4)
+            tmp(:,:,:,it) = unxform_nii(nii, img(:,:,:,it));
+        end
+        nii.original.img =tmp;
         nii = nii.original;
     else
         error('error:usage','Usage: save_nii_v2(Matrix, filename, old_nii_fname)\n old_nii_fname is missing: You need to specify a nifti filename from which the header will be copied.')

@@ -1,7 +1,16 @@
-function sct_reslice(src,dest,pointwise_reg)
+function sct_reslice(src,dest,init,pointwise_reg)
 % sct_reslice(src,dest)
 % EXAMPLE: sct_reslice('highQ_mean.nii','template_roi.nii')
-unix(['isct_antsRegistration --dimensionality 3 --transform syn[0.5,3,0] --metric MI[' dest ',' src ',1,32] --convergence 0 --shrink-factors 1 --smoothing-sigmas 0mm --restrict-deformation 1x1x0 --output [step0,' sct_tool_remove_extension(src,1) '_reslice.nii] --interpolation BSpline[3] -r [' dest ',' src ',0]'])
+%
+% sct_reslice(src,dest,init)
+% init: These features include using the header (-1), the geometric center of the images (=0), the image intensities (=1), or the origin of the images (=2).
+% EXAMPLE: sct_reslice('highQ_mean.nii','template_roi.nii',0)
+if exist('init','var') && init>=0
+    sct_unix(['isct_antsRegistration --dimensionality 3 --transform syn[0.5,3,0] --metric MI[' dest ',' src ',1,32] --convergence 0 --shrink-factors 1 --smoothing-sigmas 0mm --restrict-deformation 1x1x0 --output [step0,' sct_tool_remove_extension(src,1) '_reslice.nii] --interpolation BSpline[3] -r [' dest ',' src ',' num2str(init) ']'])
+else
+    sct_unix(['isct_antsRegistration --dimensionality 3 --transform syn[0.5,3,0] --metric MI[' dest ',' src ',1,32] --convergence 0 --shrink-factors 1 --smoothing-sigmas 0mm --restrict-deformation 1x1x0 --output [step0,' sct_tool_remove_extension(src,1) '_reslice.nii] --interpolation BSpline[3]'])
+end
+
 src_reslice=[sct_tool_remove_extension(src,1) '_reslice.nii'];
 
 mkdir step0
