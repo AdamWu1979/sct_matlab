@@ -7,7 +7,7 @@ if ~exist('show_fig','var') || isempty(show_fig)
     show_fig = 1; % display figure by default
 end
  
-
+%%
 % check if 'measures1' and 'measures2' are row vectors (if not transpose it):
 if ~isrow(measures1)
     measures1 = measures1';
