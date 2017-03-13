@@ -1,5 +1,8 @@
 function sct_dmri_moco(varargin)
-% process diffusion mri data
+% process diffusion mri data:
+% (1) CROP: option 'crop'
+% (2) EDDY CURRENT CORRECTION: option 'eddy'
+% (3) MOTION CORRECTION
 %
 % USAGE:
 % >> sct_dmri_moco() --> calls a GUI
@@ -7,26 +10,27 @@ function sct_dmri_moco(varargin)
 %
 % EXAMPLES:
 % >> sct_dmri_moco()
-% >> sct_dmri_moco('data','qspace.nii.gz','bvec','bvecs.txt','crop','autobox','eddy',0)
+% >> sct_dmri_moco('data','qspace.nii.gz','bvec','bvecs.txt','bval','bval.txt','crop','autobox','eddy',0,'ref',2)
 %
 % Option Names:
 %     bval  (bval text file)
 %     bvec (bvec text file)
 %     scheme (Camino schemefile.. don't need bvec or bval then)
-%     method : 'b0','dwi','dwi_lowbvalue'*
 %     crop : 'manual', 'box', 'none'*, 'centerline', 'autobox'
 %     eddy : 0 | 1*
 %     interp : 'nearestneighbour', 'spline'*, 'sinc'
 %     gaussian_mask : <sigma>. Default: 0. Weigth with gaussian mask? Sigma in mm --> std of the kernel. Can be a vector ([sigma_x sigma_y])
 %     smooth_moco :   0 | 1*   
-
+%     ref : # of the volume to use for reference
+%     bval_threshold : [700 10000] s/mm2. range of values used for
+%     registration.
 
 dbstop if error
 p = inputParser;
 crops = {'manual', 'box', 'none', 'centerline', 'autobox'};
 addOptional(p,'crop','autobox',@(x) any(validatestring(x,crops)));
 addOptional(p,'eddy',1,@isnumeric);
-moco_methods={'b0','dwi','dwi_lowbvalue','none'};
+moco_methods={'b0','dwi_lowbvalue','none'};
 addOptional(p,'method','dwi_lowbvalue',@(x) any(validatestring(x,moco_methods)));
 addOptional(p,'crop_margin',25,@isnumeric);
 addOptional(p,'data','');
@@ -40,6 +44,7 @@ addOptional(p,'interp','spline',@(x) any(validatestring(x,interp)));
 addOptional(p,'gaussian_mask',0,@isnumeric);
 addOptional(p,'slicewise',1,@isnumeric);
 addOptional(p,'ref',0,@isnumeric);
+addOptional(p,'bval_threshold',[700 10000],@isnumeric);
 
 parse(p,varargin{:})
 in=p.Results;
@@ -60,6 +65,7 @@ if isempty(in.bvec)
 else
     [sct.dmri.path_bvecs, sct.dmri.file_bvecs, ext] = fileparts(in.bvec);  if ~isempty(sct.dmri.path_bvecs), sct.dmri.path_bvecs=[sct.dmri.path_bvecs, filesep]; end; sct.dmri.file_bvecs=[sct.dmri.file_bvecs,ext];
 end
+
 if isempty(in.bval)
     [sct.dmri.file_bvals,sct.dmri.path_bvecs] = uigetfile('*','Select bval file') ;
     if sct.dmri.file_bvecs==0, return; end
@@ -161,7 +167,7 @@ sct.dmri.suffix_crop                = '_crop';
 sct.dmri.upsample.do                = 0; % use this if you have a malloc error in Flirt. Flirt may need more voxels to compute
 
 % Intra-run motion correction
-sct.dmri.moco_intra.method              = in.method; % 'b0','dwi_lowbvalue','none' (N.B. 'b0' should only be used with data acquired with interspersed b0. Otherwise, PROVIDING SUFFICIENT SNR, use 'dwi').
+sct.dmri.moco_intra.do                  = 1;
 sct.dmri.moco_intra.smooth_motion       = in.smooth_moco; % Apply a spline in time to estimated motion correction
 sct.dmri.moco_intra.gaussian_mask       = in.gaussian_mask; % Default: 0. Weigth with gaussian mask? Sigma in mm --> std of the kernel. Can be a vector ([sigma_x sigma_y])
 sct.dmri.moco_intra.program             = 'ANTS';% 'FLIRT' or 'ANTS' (slicewise not available with SPM.... put slicewise = 0)
@@ -172,10 +178,8 @@ sct.dmri.moco_intra.cost_function_spm   = 'nmi'; % JULIEN: add other options
 sct.dmri.moco_intra.flirt_options       = ['-interp ' in.interp]; % additional FLIRT options. Example: '-dof 6 -interp sinc'. N.B. If gradient non-linearities, it makes sense to use dof=12, otherwise dof=6.
 sct.dmri.moco_intra.correct_bvecs       = 0; % correct b-matrix along with motion correction.
 sct.dmri.moco_intra.dof                 = which('schedule_TxTy_2mm.sch'); % 'TxTyTzSxSySzKxKyKz' | 'TxSxKxKy' | 'TxSx' | 'TxSxKx'*    Degree of freedom for coregistration of gradient inversed polarity. Tx = Translation along X, Sx = scaling along X, Kx = shearing along X. N.B. data will be temporarily X-Y swapped because FLIRT can only compute shearing parameter along X, not Y
+sct.dmri.moco_intra.bval_threshold      = in.bval_threshold;
 sct.dmri.suffix_moco                    = '_moco';
-
-% Clean DWI dataset
-sct.dmri.removeInterspersed_b0		= 0; % remove interspersed b=0 images (e.g. useful for DTK). Default=0.
 
 % Reorder data
 sct.dmri.reorder_data.do 			= 0;
@@ -187,7 +191,7 @@ sct.dmri.mask.method				= 'none'; % 'manual': Draw a mask using fslview and save
 									      % 'bet': FSL tool. Reference image is the mean dwi
 										  % 'copy': Copy an existing mask to the current folder. Indicate the path+file name of the mask to use in the flag fname_mask
 										  % 'none': no masking
-sct.dmri.mask.ref					= 'b0'; % 'b0' | 'dwi'.
+sct.dmri.mask.ref					= 'unusedDWI'; % 'used' | 'unusedDWI'.
 sct.dmri.mask.display				= 0; % display mask and re-generate it via an interative process, asking the user to re-adjust the parameters
 sct.dmri.mask.bet_threshold			= 0.4; % threshold used by BET (FSL) to generate mask. Smaller values give larger brain outline estimates
 sct.dmri.mask.auto.fwhm				= 2; % FWHM for smoothing

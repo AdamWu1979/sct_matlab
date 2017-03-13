@@ -94,8 +94,8 @@ suffix_bvecs = '';
 
 % initialize file names
  if ~exist([sct.output_path,'outputs'],'dir'), mkdir([sct.output_path,'outputs']); end
- sct.dmri.file_b0        = [sct.output_path,'outputs/bo'];
- sct.dmri.file_dwi       = [sct.output_path,'outputs/dwi'];
+ sct.dmri.file_used        = [sct.output_path,'outputs/UsedForMoco'];
+ sct.dmri.file_unused       = [sct.output_path,'outputs/NotUsed'];
  sct.dmri.file_raw       = sct.dmri.file;
 
 % Find which SHELL is running
@@ -150,7 +150,6 @@ j_disp(sct.log,['.. Grad. nonlin correc:   ',num2str(sct.dmri.grad_nonlin.do)])
 j_disp(sct.log,['.. Eddy correction:       ',num2str(sct.dmri.eddy_correct.do)])
 j_disp(sct.log,['.. Reorient data:         ',num2str(sct.dmri.reorient.do)])
 j_disp(sct.log,['.. Cropping:              ',sct.dmri.crop.method])
-j_disp(sct.log,['.. Motion correction:     ',sct.dmri.moco_intra.method])
 j_disp(sct.log,['.. Masking:               ',sct.dmri.mask.method])
 
 
@@ -310,7 +309,7 @@ switch (sct.dmri.crop.method)
         end %  iZ
         j_progress(1)
         % Merge data along Z
-        j_progress('Merge moco b0 along Z dimension ...............')
+        j_progress('Merge moco along Z dimension ...............')
         fname_data_crop_splitZ = [fname_mask_splitZ,'_crop*.*'];
         fname_data_crop = [sct.dmri.path,sct.dmri.file,sct.dmri.suffix_crop];
         cmd = [fsloutput,'fslmerge -z ',fname_data_crop,' ',fname_data_crop_splitZ];
@@ -781,7 +780,7 @@ if sct.disco.do
     
     % disco - file
     sct.disco.fname_plus			= fname_plus_mean;
-    sct.disco.fname_minus			= [sct.dmri.path,sct.dmri.file_b0_mean];
+    sct.disco.fname_minus			= [sct.dmri.path,sct.dmri.file_used_mean];
     sct.disco.fname_data			= [sct.dmri.path, sct.dmri.file]; % DWI data here. If empty, only corrects 'epi_plus'.
     
     % disco - todo
@@ -833,23 +832,6 @@ save('workspace')
 
 if sct.dmri.upsample.do
     j_disp(sct.log,['Interpolate data by a factor of 2 ...'])
-    %     fid = fopen('tmp_interp_matrix','w');
-    %     fprintf(fid, '%i %i %i %i\n %i %i %i %i\n %i %i %i %i\n %i %i %i %i',0.5, 0, 0, 0, 0, 0.5, 0, 0, 0, 0, 0.5, 0, 0, 0, 0, 1);
-    %     fclose(fid);
-    %     cmd = [fsloutput 'flirt -in ' sct.dmri.path sct.dmri.file ' -ref ' sct.dmri.path sct.dmri.file ' -applyxfm -init tmp_interp_matrix -out ' ct.dmri.path sct.dmri.file '_interp'];
-    %     j_disp(sct.log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
-    
-    %     cmd = [fsloutput 'fslsplit ' sct.dmri.path sct.dmri.file ' tmp_' sct.dmri.file];
-    %     j_disp(sct.log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
-    %
-    %     numT = j_numbering(sct.dmri.nt,4,0);
-    %     for iT = 1:sct.dmri.nt
-    %         cmd = ['c3d tmp_' sct.dmri.file numT{iT} '.nii -interpolation Cubic -resample ' num2str(2*sct.dmri.nx) 'x' num2str(2*sct.dmri.ny) 'x' num2str(sct.dmri.nz) 'vox -o tmp_' sct.dmri.file '_interp' numT{iT} '.nii'];
-    %         j_disp(sct.log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
-    %     end
-    %     cmd = [fsloutput 'fslmerge -t ' sct.dmri.path sct.dmri.file '_interp tmp_' sct.dmri.file '_interp*'];
-    %     j_disp(sct.log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
-    %  unix('rm -f tmp_*');
     
     [dmri_matrix,dims,scales] = read_avw([sct.dmri.path sct.dmri.file]);
     dmri_matrix_interp = zeros(2*sct.dmri.nx-1,2*sct.dmri.ny-1,sct.dmri.nz,sct.dmri.nt);
@@ -887,30 +869,21 @@ j_disp(sct.log,['-----------------------------------------------'])
 
 % find where are the b=0 images
 j_disp(sct.log,['Identify b=0 images...'])
-switch sct.dmri.moco_intra.method
-    case 'dwi_lowbvalue'
-        j_disp(sct.log,['Using low diffusion instead...'])
-        if exist(sct.dmri.file_bvals,'file')
-            bvals = load(sct.dmri.file_bvals);
-        else
-            [sct.dmri.file_bvals,sct.dmri.path_bvals] = uigetfile('*','Select bvals file') ;
-            sct.dmri.file_bvals = [sct.dmri.path_bvals,sct.dmri.file_bvals];
-            bvals = load(sct.dmri.file_bvals);
-        end
-        index_b0 = find(bvals>700)';
-        if isempty(index_b0), error('\nNo low diffusion images... change motion correction method'); end
-        % process 'dwi_lowbvalue' method as if it were a b0 method (b0 index is just not the same)
-        sct.dmri.moco_intra.method = 'b0';
-        
-    otherwise
-        index_b0 = find(sum(sct.dmri.data_bvecs.^2,2)<0.005)';
+j_disp(sct.log,['Using low diffusion instead...'])
+if exist(sct.dmri.file_bvals,'file')
+    bvals = load(sct.dmri.file_bvals);
+else
+    [sct.dmri.file_bvals,sct.dmri.path_bvals] = uigetfile('*','Select bvals file') ;
+    sct.dmri.file_bvals = [sct.dmri.path_bvals,sct.dmri.file_bvals];
+    bvals = load(sct.dmri.file_bvals);
 end
+index_used = find(bvals>min(sct.dmri.moco_intra.bval_threshold) & bvals<max(sct.dmri.moco_intra.bval_threshold))';
+if isempty(index_used), error(['\nNo DWI between ' num2str(sct.dmri.moco_intra.bval_threshold) ' s/mm2 ... change bval_threshold option']); end
 
-
-sct.dmri.index_b0 = index_b0; index_b0=index_b0(:);
-j_disp(sct.log,['.. Index of b=0 images: ',num2str(index_b0')])
-nb_b0 = length(index_b0);
-sct.dmri.nb_b0 = nb_b0;
+sct.dmri.index_used = index_used; index_used=index_used(:);
+j_disp(sct.log,['.. Index of b=0 images: ',num2str(index_used')])
+nb_dwiused = length(index_used);
+sct.dmri.nb_unused_dwiused = nb_dwiused;
 
 % split into T dimension
 j_disp(sct.log,['\nSplit along T dimension...'])
@@ -921,36 +894,31 @@ numT = j_numbering(sct.dmri.nt,4,0);
 
 % Merge b=0 images
 j_disp(sct.log,['\nMerge b=0 images...'])
-fname_b0_merge = [sct.dmri.file_b0,suffix_data];
-cmd = [fsloutput,'fslmerge -t ',fname_b0_merge];
-for iT = 1:nb_b0
-    cmd = cat(2,cmd,[' ',sct.output_path,'tmp.dmri.data_splitT',numT{index_b0(iT)}]);
+fname_used_merge = [sct.dmri.file_used,suffix_data];
+cmd = [fsloutput,'fslmerge -t ',fname_used_merge];
+for iT = 1:nb_dwiused
+    cmd = cat(2,cmd,[' ',sct.output_path,'tmp.dmri.data_splitT',numT{index_used(iT)}]);
 end
 j_disp(sct.log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
-j_disp(sct.log,['.. File created: ',fname_b0_merge])
+j_disp(sct.log,['.. File created: ',fname_used_merge])
 
-% change the default b0 file name
-sct.dmri.file_b0=[sct.dmri.file_b0,suffix_data];
+% change the default file_used file name
+sct.dmri.file_used=[sct.dmri.file_used,suffix_data];
 
-% Average b=0 images
-j_disp(sct.log,['\nAverage b=0 images...'])
-fname_b0_mean = [sct.dmri.file_b0,'_mean'];
-cmd = [fsloutput,'fslmaths ',fname_b0_merge,' -Tmean ',fname_b0_mean];
+% Average used images
+j_disp(sct.log,['\nAverage used images...'])
+fname_used_mean = [sct.dmri.file_used,'_mean'];
+cmd = [fsloutput,'fslmaths ',fname_used_merge,' -Tmean ',fname_used_mean];
 j_disp(sct.log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
-j_disp(sct.log,['.. File created: ',fname_b0_mean])
+j_disp(sct.log,['.. File created: ',fname_used_mean])
 
-
-
-j_disp(sct.log,['\nMerge and average groups of DW images into one file'])
-% Make DWI groups (Nimages) index (without b0)
-
-% find where are the dwi
-index_dwi=1:sct.dmri.nt; %initialize with all images
-index_dwi=index_dwi(~ismember(index_dwi,index_b0)); % remove b0
-sct.dmri.nb_dwi=sct.dmri.nt-sct.dmri.nb_b0;
+% find where are the unused dwi
+index_unused=1:sct.dmri.nt; %initialize with all images
+index_unused=index_unused(~ismember(index_unused,index_used)); % remove used
+sct.dmri.nb_unused_dwi=sct.dmri.nt-sct.dmri.nb_unused_dwiused;
 
 % Update dwi file name
-sct.dmri.file_dwi=[sct.dmri.file_dwi,suffix_data];
+sct.dmri.file_unused=[sct.dmri.file_unused,suffix_data];
 
 
 save([sct.output_path 'workspace.mat'])
@@ -968,7 +936,7 @@ save([sct.output_path 'workspace.mat'])
 %	INTRA-RUN MOTION CORRECTION
 % ====================================================================
 
-if ~strcmp(sct.dmri.moco_intra.method,'none')
+if sct.dmri.moco_intra.do
     
     j_disp(sct.log,['\n\n   Intra-run motion correction:'])
     j_disp(sct.log,['-----------------------------------------------'])
@@ -976,40 +944,35 @@ if ~strcmp(sct.dmri.moco_intra.method,'none')
     % use target image from these data
     
     % identify target file
-    j_disp(sct.log,['.. Motion correction method: "',sct.dmri.moco_intra.method,'"'])
+    j_disp(sct.log,['.. Motion correction using DWI acquired with bvals in the range',sct.dmri.moco_intra.bval_threshold,' s/mm2'])
 
-    % use b=0 image. In case b=0 images are interspersed,
-            % use the b=0 closest to the DWI for registration
-            if strcmp(sct.dmri.moco_intra.ref,'b0_mean')
-                fname_target = [sct.dmri.file_b0,'_mean'];
-            else
-                if ~str2num(sct.dmri.moco_intra.ref)
-                    fname_data = [sct.dmri.path,sct.dmri.file];
-                    data=load_nii_data([fname_data sct.ext]);
-                    data=data(:,:,:,index_b0);
-                    figure(14)
-                    imagesc(data(:,:,ceil(end/2),1)); colormap gray; axis image;
-                    msgbox({'Use the slider (figure 14, bottom) to select the ref (highest contrast, no CSF)' 'Press any key when are done..'})
-                    hsl = uicontrol('Style','slider','Min',1,'Max',sct.dmri.nt,...
-                        'SliderStep',[1 1]./sct.dmri.nt,'Value',1,...
-                        'Position',[20 20 200 20]);
-                    set(hsl,'Callback',@(hObject,eventdata)  display_midleslice(hObject,data))
-                    pause
-                    
-                    num_b0=round(get(hsl,'Value'));
-                    close(14)
-                else
-                    num_b0 = str2num(sct.dmri.moco_intra.ref);
-                end
-                % Extract corresponding b=0 image
-                j_disp(sct.log,['.. Extract b=0 images #',num2str(num_b0),' to use for registration target'])
-
-                fname_b0 = [sct.dmri.path,'ref_moco.b0',num2str(num_b0)];
-                cmd = [fsloutput,'fslroi ',fname_data,' ',fname_b0,' ',num2str(index_b0(num_b0)-1),' 1'];
-                j_disp(sct.log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
-                fname_target = ['ref_moco.b0',num2str(num_b0)];
-                j_disp(sct.log,['.. Target image: "',fname_target,'"'])
-            end
+    if ~str2num(sct.dmri.moco_intra.ref)
+        fname_data = [sct.dmri.path,sct.dmri.file];
+        data=load_nii_data([fname_data sct.ext]);
+        data=data(:,:,:,index_used);
+        figure(14)
+        imagesc(data(:,:,ceil(end/2),1)); colormap gray; axis image;
+        msgbox({'Use the slider (figure 14, bottom) to select the ref (highest contrast, no CSF)' 'Press any key when are done..'})
+        hsl = uicontrol('Style','slider','Min',1,'Max',sct.dmri.nt,...
+            'SliderStep',[1 1]./sct.dmri.nt,'Value',1,...
+            'Position',[20 20 200 20]);
+        set(hsl,'Callback',@(hObject,eventdata)  display_midleslice(hObject,data))
+        pause
+        
+        num_used=round(get(hsl,'Value'));
+        close(14)
+    else
+        num_used = str2num(sct.dmri.moco_intra.ref);
+    end
+    
+    % Extract corresponding b=0 image
+    j_disp(sct.log,['.. Extract b=0 images #',num2str(num_used),' to use for registration target'])
+    
+    fname_used = [sct.dmri.path,'ref_moco',num2str(num_used)];
+    cmd = [fsloutput,'fslroi ',fname_data,' ',fname_used,' ',num2str(index_used(num_used)-1),' 1'];
+    j_disp(sct.log,['>> ',cmd]); [status, result] = unix(cmd); if status, error(result); end
+    fname_target = ['ref_moco',num2str(num_used)];
+    j_disp(sct.log,['.. Target image: "',fname_target,'"'])
     
     
     
@@ -1022,13 +985,13 @@ if ~strcmp(sct.dmri.moco_intra.method,'none')
         param.folder_mat = [sct.output_path,'mat_moco/'];
         param.output_path= [sct.output_path,'tmp_moco/'];
         param.fname_data = [sct.dmri.path,sct.dmri.file];
-        param.fname_data_moco = [sct.dmri.file_b0,sct.dmri.suffix_moco];
+        param.fname_data_moco = [sct.dmri.file_used,sct.dmri.suffix_moco];
         param.fname_target = [sct.dmri.path,fname_target];
         param.fname_data_splitT = [sct.output_path 'tmp.dmri.data_splitT'];
         param.nt = sct.dmri.nt;
         param.nz = sct.dmri.nz;
         param.fsloutput = fsloutput;
-        param.index = sct.dmri.index_b0; % correct b0 only
+        param.index = sct.dmri.index_used; % correct index only
         param.fname_log = sct.log;
         param.suffix = sct.dmri.suffix_moco;
         if any(strcmp(who,'centerline')), param.centerline=centerline; end
@@ -1041,25 +1004,25 @@ if ~strcmp(sct.dmri.moco_intra.method,'none')
         j_disp(sct.log,['\nFind registration matrix to the closest DWI data...'])
         for i_file = [1 sct.dmri.nt]
             % find which mat file to use
-            [min_closest_b0 i_b0] = min(abs(index_b0'-i_file));
+            [min_closest, i_closest] = min(abs(index_used'-i_file));
             % copy mat file
             if sct.dmri.moco_intra.slicewise
                 for iZ=1:sct.dmri.nz
-                    fname_mat_tmp = [sct.output_path 'mat_moco/','mat.T',num2str(index_b0(i_b0)),'_Z',num2str(iZ),'.txt'];
+                    fname_mat_tmp = [sct.output_path 'mat_moco/','mat.T',num2str(index_used(i_closest)),'_Z',num2str(iZ),'.txt'];
                     fname_mat{i_file} = [sct.output_path 'mat_moco/','mat.T',num2str(i_file),'_Z',num2str(iZ),'.txt'];
-                    if i_file ~= index_b0(i_b0)
+                    if i_file ~= index_used(i_closest)
                         copyfile(fname_mat_tmp,fname_mat{i_file});
                         % display which mat to use
-                        j_disp(sct.log,['.. Correct volume #',num2str(i_file),' using "',fname_mat_tmp,'" (distance to b=0: ',num2str(min_closest_b0),')']);
+                        j_disp(sct.log,['.. Correct volume #',num2str(i_file),' using "',fname_mat_tmp,'" (distance to b=0: ',num2str(min_closest),')']);
                     end
                 end
             else
-                fname_mat_tmp = [sct.output_path 'mat_moco/','mat.T',numT{index_b0(i_b0)},'.txt'];
+                fname_mat_tmp = [sct.output_path 'mat_moco/','mat.T',numT{index_used(i_closest)},'.txt'];
                 fname_mat{i_file} = [sct.output_path 'mat_moco/','mat.T',numT{i_file},'.txt'];
-                if i_file ~= index_b0(i_b0)
+                if i_file ~= index_used(i_closest)
                     copyfile(fname_mat_tmp,fname_mat{i_file});
                     % display which mat to use
-                    j_disp(sct.log,['.. Correct volume #',num2str(i_file),' using "',fname_mat_tmp,'" (distance to b=0: ',num2str(min_closest_b0),')']);
+                    j_disp(sct.log,['.. Correct volume #',num2str(i_file),' using "',fname_mat_tmp,'" (distance to b=0: ',num2str(min_closest),')']);
                 end
             end
         end
@@ -1089,7 +1052,7 @@ end
 %	Apply motion correction
 % ====================================================================
 %
-if ~strcmp(sct.dmri.moco_intra.method,'none')
+if sct.dmri.moco_intra.do
     
     if mat_folders.nb % mat_folders.nb = nb of transformations done
         
@@ -1135,27 +1098,27 @@ if ~strcmp(sct.dmri.moco_intra.method,'none')
     
     % Merge b=0 images
     j_disp(sct.log,['\nMerge b=0 images...'])
-    fname_b0_merge = [sct.dmri.file_b0,sct.dmri.suffix_moco];
-    cmd = [fsloutput,'fslmerge -t ',fname_b0_merge];
-    for iT = 1:nb_b0
-        cmd = cat(2,cmd,[' ' param.output_path 'tmp_moco.data_splitT_moco',numT{index_b0(iT)}]);
+    fname_used_merge = [sct.dmri.file_used,sct.dmri.suffix_moco];
+    cmd = [fsloutput,'fslmerge -t ',fname_used_merge];
+    for iT = 1:nb_dwiused
+        cmd = cat(2,cmd,[' ' param.output_path 'tmp_moco.data_splitT_moco',numT{index_used(iT)}]);
     end
     j_disp(sct.log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
-    j_disp(sct.log,['.. File created: ',fname_b0_merge])
+    j_disp(sct.log,['.. File created: ',fname_used_merge])
     
     % Average b=0 images
     j_disp(sct.log,['\nAverage b=0 images...'])
-    fname_b0_mean = [fname_b0_merge,'_mean'];
-    cmd = [fsloutput,'fslmaths ',fname_b0_merge,' -Tmean ',fname_b0_mean];
+    fname_used_mean = [fname_used_merge,'_mean'];
+    cmd = [fsloutput,'fslmaths ',fname_used_merge,' -Tmean ',fname_used_mean];
     j_disp(sct.log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
-    j_disp(sct.log,['.. File created: ',fname_b0_mean])
+    j_disp(sct.log,['.. File created: ',fname_used_mean])
     
     % Merge DWI images
     j_disp(sct.log,['\nMerge DWI images...'])
-    for iT = 1:sct.dmri.nb_dwi
-        opt_merge.fname_split{iT} = [param.output_path 'tmp_moco.data_splitT_moco',numT{index_dwi(iT)}];
+    for iT = 1:sct.dmri.nb_unused_dwi
+        opt_merge.fname_split{iT} = [param.output_path 'tmp_moco.data_splitT_moco',numT{index_unused(iT)}];
     end
-    fname_dwi_merge = [sct.dmri.file_dwi,sct.dmri.suffix_moco];
+    fname_dwi_merge = [sct.dmri.file_unused,sct.dmri.suffix_moco];
     opt_merge.fname_merge = fname_dwi_merge;
     opt_merge.fname_log   = sct.log;
     j_mri_merge(opt_merge); % this function is used to deal with potentially large number of files (>1000)
@@ -1163,14 +1126,14 @@ if ~strcmp(sct.dmri.moco_intra.method,'none')
     
     % Average DWI images
     j_disp(sct.log,['\nAverage DWI images...'])
-    fname_dwi_mean = [sct.dmri.file_dwi,sct.dmri.suffix_moco,'_mean'];
+    fname_dwi_mean = [sct.dmri.file_unused,sct.dmri.suffix_moco,'_mean'];
     cmd = [fsloutput,'fslmaths ',opt_merge.fname_merge,' -Tmean ',fname_dwi_mean];
     j_disp(sct.log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
     j_disp(sct.log,['.. File created: ',fname_dwi_mean])
     
     % update file name
-    sct.dmri.file_b0 = [sct.dmri.file_b0,sct.dmri.suffix_moco];
-    sct.dmri.file_dwi = [sct.dmri.file_dwi,sct.dmri.suffix_moco];
+    sct.dmri.file_used = [sct.dmri.file_used,sct.dmri.suffix_moco];
+    sct.dmri.file_unused = [sct.dmri.file_unused,sct.dmri.suffix_moco];
     
     
     % Correct bvecs
@@ -1214,85 +1177,21 @@ if ~strcmp(sct.dmri.moco_intra.method,'none')
     %	Merge data back
     % ============================================================
     
-    if sct.dmri.removeInterspersed_b0
-        
-        j_disp(sct.log,['\n\n\nRemove interspersed b=0 and merge data back'])
-        j_disp(sct.log,['-----------------------------------------------'])
-        
-        
-        % Merge data
-        % =================================================================
-        j_disp(sct.log,['\nMerge DW images and add the mean b=0 at the beginning...'])
-        fname_data_merge = [sct.dmri.path,sct.dmri.file,sct.dmri.suffix_moco,sct.dmri.suffix_clean];
-        cmd = [fsloutput,'fslmerge -t ',fname_data_merge];
-        % add b=0 (take the first one)
-        cmd = cat(2,cmd,' ',fname_b0_mean);
-        % add DW images
-        cmd = cat(2,cmd,' ',fname_dwi_merge);
-        j_disp(sct.log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
-        suffix_data = [suffix_data,sct.dmri.suffix_moco,sct.dmri.suffix_clean];
-        sct.dmri.file = [sct.dmri.file,sct.dmri.suffix_moco,sct.dmri.suffix_clean];
-        j_disp(sct.log,['.. File created: ',sct.dmri.file])
-        
-        
-        % Clean bvecs/bvals
-        % =================================================================
-        j_disp(sct.log,['\nClean bvecs/bvals...'])
-        
-        % open bvecs/bvals
-        fname_bvecs = [sct.dmri.path,sct.dmri.file_bvecs];
-        bvecs = textread(fname_bvecs);
-        if ~isempty(sct.dmri.file_bvals)
-            sct.dmri.file_bvals = [sct.dmri.path,sct.dmri.file_bvals];
-            bvals = textread(sct.dmri.file_bvals);
-        end
-        
-        % create new bvecs/bvals
-        bvecs_new = [];
-        if ~isempty(sct.dmri.file_bvals), bvals_new = []; end
-        
-        % add b=0
-        bvecs_new = bvecs(index_b0(1),:);
-        if ~isempty(sct.dmri.file_bvals), bvals_new = bvals(index_b0(1)); end
-        
-        % add DW
-        for iT = 1:sct.dmri.nb_dwi
-            bvecs_new = cat(1,bvecs_new,bvecs(index_dwi(iT),:));
-            if ~isempty(sct.dmri.file_bvals), bvals_new = cat(1,bvals_new,sct.dmri.gradients.bvals(index_dwi(iT))); end
-        end
-        j_disp(sct.log,['.. New number of directions: ',num2str(size(bvecs_new,1)-1),'+1'])
-        
-        % write new files
-        fname_bvecs_new = [sct.dmri.path,sct.dmri.file_bvecs,sct.dmri.suffix_clean];
-        j_dmri_gradientsWrite(bvecs_new,fname_bvecs_new,'fsl');
-        sct.dmri.file_bvecs = [sct.dmri.file_bvecs,sct.dmri.suffix_clean];
-        j_disp(sct.log,['.. File created: ',sct.dmri.file_bvecs])
-        if ~isempty(sct.dmri.file_bvals)
-            fname_bvals_new = [sct.dmri.path,sct.dmri.file_bvals,sct.dmri.suffix_clean];
-            j_dmri_gradientsWriteBvalue(bvals_new,fname_bvals_new,'fsl');
-            if ~isempty(sct.dmri.file_bvals), sct.dmri.file_bvals = [sct.dmri.file_bvals,sct.dmri.suffix_clean]; end
-            j_disp(sct.log,['.. File created: ',sct.dmri.file_bvals]);
-        end
-        
-        
-    else
-        
-        j_disp(sct.log,['\n   Merge data back'])
-        j_disp(sct.log,['-----------------------------------------------'])
-        
-        % Merge data back
-        j_disp(sct.log,['\nConcatenate along T...'])
-        fname_data_merge = [sct.dmri.path,sct.dmri.file,sct.dmri.suffix_moco];
-        cmd = [fsloutput,'fslmerge -t ',fname_data_merge];
-        for iT = 1:sct.dmri.nt
-            cmd = cat(2,cmd,[' ' param.output_path 'tmp_moco.data_splitT',sct.dmri.suffix_moco,numT{iT}]);
-        end
-        j_disp(sct.log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
-        suffix_data = [suffix_data,sct.dmri.suffix_moco];
-        sct.dmri.file = [sct.dmri.file,sct.dmri.suffix_moco];
-        j_disp(sct.log,['.. File created: ',sct.dmri.file])
-        
+    j_disp(sct.log,['\n   Merge data back'])
+    j_disp(sct.log,['-----------------------------------------------'])
+    
+    % Merge data back
+    j_disp(sct.log,['\nConcatenate along T...'])
+    fname_data_merge = [sct.dmri.path,sct.dmri.file,sct.dmri.suffix_moco];
+    cmd = [fsloutput,'fslmerge -t ',fname_data_merge];
+    for iT = 1:sct.dmri.nt
+        cmd = cat(2,cmd,[' ' param.output_path 'tmp_moco.data_splitT',sct.dmri.suffix_moco,numT{iT}]);
     end
+    j_disp(sct.log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
+    suffix_data = [suffix_data,sct.dmri.suffix_moco];
+    sct.dmri.file = [sct.dmri.file,sct.dmri.suffix_moco];
+    j_disp(sct.log,['.. File created: ',sct.dmri.file])
+    
     
 end
 
@@ -1361,9 +1260,9 @@ j_disp(sct.log,['-----------------------------------------------'])
 j_disp(sct.log,['.. Mask generation method: "',sct.dmri.mask.method,'"'])
 
 if strcmp(sct.dmri.mask.ref,'b0')
-    mask_ref = [sct.dmri.file_b0,'_mean'];
+    mask_ref = [sct.dmri.file_used,'_mean'];
 elseif strcmp(sct.dmri.mask.ref,'dwi')
-    mask_ref = [sct.dmri.file_dwi,'_mean'];
+    mask_ref = [sct.dmri.file_unused,'_mean'];
 end
 j_disp(sct.log,['.. Mask reference: "',sct.dmri.mask.ref,'"'])
 
@@ -1471,7 +1370,7 @@ switch sct.dmri.mask.method
         j_disp(sct.log,'\nNo mask prescribed. Creating one that encompasses the whole volume...')
         
         %         % use the b0 image to create the mask
-        %         fname_b0_mean = [sct.dmri.file_b0,'_mean',ext];
+        %         fname_b0_mean = [sct.dmri.file_used,'_mean',ext];
         %         fname_mask = [sct.dmri.path,sct.dmri.file_mask,ext];
         %         cmd = ['cp ',fname_b0_mean,' ',fname_mask];
         %         j_disp(sct.log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
@@ -1513,7 +1412,7 @@ if sct.dmri.dti.do_each_run
     
     % display results
     j_disp(sct.log,['To check results, type:'])
-    j_disp(sct.log,['fslview ',sct.dmri.path,'dti_FA ',sct.dmri.path,'dti_V1 ',sct.dmri.file_b0,'_mean ',sct.dmri.file_dwi,'_mean'])
+    j_disp(sct.log,['fslview ',sct.dmri.path,'dti_FA ',sct.dmri.path,'dti_V1 ',sct.dmri.file_used,'_mean ',sct.dmri.file_unused,'_mean'])
     
 end
 
@@ -1525,11 +1424,11 @@ if sct.dmri.dtk.do
     % get numbers of B0
     % N.B. B0 SHOULD ALWAYS BE AT THE BEGGINING OF THE ACQUISITION!!! (NOT IN THE MIDDLE)
     bvals = textread(sct.dmri.file_bvals);
-    nb_b0 = max(find(bvals==0));
+    nb_dwiused = max(find(bvals==0));
     % create a gradient vector list compatible with DTK (should contain no b0)
     fname_bvecs = [sct.dmri.path,sct.dmri.file_bvecs];
     bvecs_dtk = textread(fname_bvecs);
-    bvecs_dtk_nob0 = bvecs_dtk(nb_b0+1:end,:);
+    bvecs_dtk_nob0 = bvecs_dtk(nb_dwiused+1:end,:);
     fname_bvecs_dtk = [sct.dmri.path,sct.dmri.dtk.file_bvecs_dtk];
     fid = fopen(fname_bvecs_dtk,'w');
     fprintf(fid,'%f %f %f \n',bvecs_dtk_nob0);
@@ -1543,7 +1442,7 @@ if sct.dmri.dtk.do
     j_disp(sct.log,'\nEstimate q-ball')
     cmd = ['hardi_mat ',fname_bvecs_dtk,' ','temp_mat.dat',' -ref ',fname_data];
     [status result] = unix(cmd);
-    cmd = ['odf_recon ',fname_data,' ',num2str(nb_dirs+1),' 181 ',fname_qball,' -b0 ',num2str(nb_b0),' -mat temp_mat.dat -nt -p 3 -sn 1 -ot nii'];
+    cmd = ['odf_recon ',fname_data,' ',num2str(nb_dirs+1),' 181 ',fname_qball,' -b0 ',num2str(nb_dwiused),' -mat temp_mat.dat -nt -p 3 -sn 1 -ot nii'];
     [status result] = unix(cmd);
     % delete temp file
     delete('temp_mat.dat');
