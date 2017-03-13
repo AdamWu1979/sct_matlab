@@ -54,6 +54,7 @@ set(hsl,'Callback',@(hObject,eventdata) GenerateSplines(X,Y,T,Z_index,ind_ab,10^
 
 pause
 
+j_disp(log_spline,['Smooth using smoothness of ' num2str(10000*10^(get(hsl,'Value'))) '...'])
 [Xout, Yout]=GenerateSplines(X,Y,T,Z_index,ind_ab,10^(get(hsl,'Value')),color);
 j_disp(log_spline,['...done!'])
 %% SAVE MATRIX
@@ -108,6 +109,7 @@ drawnow;
 
 
 function M_motion_t_smooth = spline(T,M_motion_t,smoothness,Tout)
+disp(['Smooth using smoothness of ' num2str(10000*smoothness) '...'])
  M_motion_t_smooth=smoothn_x(T,M_motion_t,Tout,10000*smoothness,1);
 
 
