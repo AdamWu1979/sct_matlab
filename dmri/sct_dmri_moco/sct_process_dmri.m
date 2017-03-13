@@ -890,31 +890,19 @@ j_disp(sct.log,['Identify b=0 images...'])
 switch sct.dmri.moco_intra.method
     case 'dwi_lowbvalue'
         j_disp(sct.log,['Using low diffusion instead...'])
-        if exist([sct.dmri.schemefile])
-            fid = fopen(sct.dmri.schemefile,'r');
-            fgetl(fid);fgetl(fid);fgetl(fid); % skip first 3 lines
-            scheme = fscanf(fid,'%f %f %f %f %f %f %f',[7,Inf]); scheme = scheme';
-            % All values must be in SI units
-            DELTA = scheme(:,5);
-            delta = scheme(:,6);
-            bvecs = scheme(:,1:3);
-            grad_val = scheme(:,4).*sqrt(sum(bvecs.^2,2));
-            gamma = 42.57*10^6; % Hz/T
-            bvals = (2*pi*gamma*delta.*grad_val).^2.*(DELTA - delta/3)*10^-6;% s/mm^2
-        elseif exist(sct.dmri.file_bvals,'file')
+        if exist(sct.dmri.file_bvals,'file')
             bvals = load(sct.dmri.file_bvals);
         else
-            
             [sct.dmri.file_bvals,sct.dmri.path_bvals] = uigetfile('*','Select bvals file') ;
             sct.dmri.file_bvals = [sct.dmri.path_bvals,sct.dmri.file_bvals];
             bvals = load(sct.dmri.file_bvals);
         end
-        index_b0 = find(bvals>429 & bvals<4000)';
+        index_b0 = find(bvals>700)';
         if isempty(index_b0), error('\nNo low diffusion images... change motion correction method'); end
         % process 'dwi_lowbvalue' method as if it were a b0 method (b0 index is just not the same)
         sct.dmri.moco_intra.method = 'b0';
         
-    otherwise 'b0'
+    otherwise
         index_b0 = find(sum(sct.dmri.data_bvecs.^2,2)<0.005)';
 end
 
@@ -960,70 +948,9 @@ j_disp(sct.log,['\nMerge and average groups of DW images into one file'])
 index_dwi=1:sct.dmri.nt; %initialize with all images
 index_dwi=index_dwi(~ismember(index_dwi,index_b0)); % remove b0
 sct.dmri.nb_dwi=sct.dmri.nt-sct.dmri.nb_b0;
-% Number of dwi groups
-sct.dmri.nb_groups = floor(sct.dmri.nb_dwi/sct.dmri.moco_intra.dwi_group_size);
-% Generate groups indexes
-for iGroup = 0:(sct.dmri.nb_groups-1)
-	sct.dmri.group_indexes{iGroup+1} = index_dwi((iGroup*sct.dmri.moco_intra.dwi_group_size+1):((iGroup+1)*sct.dmri.moco_intra.dwi_group_size));
-end
-% add the remaining images to the last DWI group
-nb_remaining=mod(sct.dmri.nb_dwi,sct.dmri.moco_intra.dwi_group_size); % number of remaining images
-if nb_remaining<3
-sct.dmri.group_indexes{sct.dmri.nb_groups}=[sct.dmri.group_indexes{sct.dmri.nb_groups}, index_dwi(end-nb_remaining+1:end)];
-else
-    sct.dmri.nb_groups=sct.dmri.nb_groups+1;
-    sct.dmri.group_indexes{sct.dmri.nb_groups}=index_dwi(end-nb_remaining+1:end);
-end
-sct.dmri.group_indexes = sct.dmri.group_indexes(~cellfun(@isempty, sct.dmri.group_indexes));% Remove empty groups index
 
-% Size of dwi groups
-for iGroup = 1:sct.dmri.nb_groups
-	j_disp(sct.log,['\nGroup ',num2str(iGroup),' of DW images'])
-
-	j_disp(sct.log,['.. Index of DW images: ',num2str(sct.dmri.group_indexes{iGroup})])
-	index_dwi_i = sct.dmri.group_indexes{iGroup};
-    nb_dwi_i = length(index_dwi_i);
-    
-	% Merge DWI images
-	j_disp(sct.log,['\nMerge DW images...'])
-	fname_dwi_merge_i = [sct.dmri.file_dwi,suffix_data,'_',num2str(iGroup)];
-	cmd = [fsloutput,'fslmerge -t ',fname_dwi_merge_i];
-	for iT = 1:nb_dwi_i
-		cmd = cat(2,cmd,[' ',sct.output_path,'tmp.dmri.data_splitT',numT{index_dwi_i(iT)}]);
-	end
-	j_disp(sct.log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
-	j_disp(sct.log,['.. File created: ',fname_dwi_merge_i])
-        
-
-	% Average DWI images
-	j_disp(sct.log,['\nAverage DWI images...'])
-	fname_dwi_mean = [sct.dmri.file_dwi,suffix_data,'_mean','_',num2str(iGroup)];
-	cmd = [fsloutput,'fslmaths ',fname_dwi_merge_i,' -Tmean ',fname_dwi_mean];
-	j_disp(sct.log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
-	j_disp(sct.log,['.. File created: ',fname_dwi_mean])
-end % DW images group
 % Update dwi file name
 sct.dmri.file_dwi=[sct.dmri.file_dwi,suffix_data];
-
-j_disp(sct.log,['\nMerge and average all DW images into one file'])
-
-
-% Merge DWI groups means
-j_disp(sct.log,['\nMerging DW files...'])
-fname_dwi_groups_means_merge = [sct.dmri.path,'dwi_groups_mean'];
-cmd = [fsloutput,'fslmerge -t ',fname_dwi_groups_means_merge];
-for iGroup = 1:sct.dmri.nb_groups
-    cmd = cat(2,cmd,[' ',sct.dmri.file_dwi,'_mean_',num2str(iGroup)]);
-end
-j_disp(sct.log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
-j_disp(sct.log,['.. File created: ',fname_dwi_groups_means_merge])
-
-% Average DWI images
-j_disp(sct.log,['\nAveraging all DW images...'])
-fname_dwi_mean = [sct.dmri.path,'dwi_mean'];
-cmd = [fsloutput,'fslmaths ',fname_dwi_groups_means_merge,' -Tmean ',fname_dwi_mean];
-j_disp(sct.log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
-j_disp(sct.log,['.. File created: ',fname_dwi_mean])
 
 
 save([sct.output_path 'workspace.mat'])
@@ -1050,10 +977,8 @@ if ~strcmp(sct.dmri.moco_intra.method,'none')
     
     % identify target file
     j_disp(sct.log,['.. Motion correction method: "',sct.dmri.moco_intra.method,'"'])
-    switch sct.dmri.moco_intra.method
-        
-        case 'b0'
-            % use b=0 image. In case b=0 images are interspersed,
+
+    % use b=0 image. In case b=0 images are interspersed,
             % use the b=0 closest to the DWI for registration
             if strcmp(sct.dmri.moco_intra.ref,'b0_mean')
                 fname_target = [sct.dmri.file_b0,'_mean'];
@@ -1085,23 +1010,10 @@ if ~strcmp(sct.dmri.moco_intra.method,'none')
                 fname_target = ['ref_moco.b0',num2str(num_b0)];
                 j_disp(sct.log,['.. Target image: "',fname_target,'"'])
             end
-            
-        case 'dwi'
-            % use the group's mean image for registration
-            fname_target = cell(1,sct.dmri.nb_groups);
-            for j = 1:sct.dmri.nb_groups
-                j_disp(sct.log,['\nCreate registration target for dwi group number',num2str(j)])
-                fname_target{j} = [sct.dmri.file_dwi,'_mean_',num2str(j)];
-                j_disp(sct.log,['.. Target image: "',fname_target{j},'"'])
-            end
-    end % end switch
     
     
     
-    % Estimate motion correction
-    
-    if strcmp(sct.dmri.moco_intra.method,'b0')
-        
+    % Estimate motion correction        
         % Estimate motion based on b=0 images
         j_disp(sct.log,['\nEstimate motion based on b=0 images...'])
         param = sct.dmri.moco_intra;
@@ -1157,152 +1069,6 @@ if ~strcmp(sct.dmri.moco_intra.method,'none')
         mat_folders.names{mat_folders.nb} = [sct.output_path 'mat_moco/'];
         mat_folders.slicewise(mat_folders.nb) = sct.dmri.moco_intra.slicewise;
         save([sct.output_path 'workspace.mat'])
-
-    elseif strcmp(sct.dmri.moco_intra.method,'dwi')
-        
-%         % call motion correction module for each dwi group
-%         j_disp(sct.log,['\n\n\n\n\n==============================================='])
-%         j_disp(sct.log,['    STEP 1/3 : Estimate motion correction for each group dwi based on dwi_iGroup_mean'])
-%         j_disp(sct.log,['===============================================\n'])
-%         for  iGroup = 1:sct.dmri.nb_groups
-%             j_disp(sct.log,['\n    Estimate motion correction of dwi group ',num2str( iGroup),' / ',num2str(sct.dmri.nb_groups)])
-%             j_disp(sct.log,['-----------------------------------------------\n'])
-%             param = sct.dmri.moco_intra;
-%             param.todo = 'estimate_and_apply'; % only estimate matrix (to minimize interpolation)
-%             param.split_data = 0;
-%             param.fname_data_splitT = [sct.output_path 'tmp.dmri.data_splitT'];
-%             param.folder_mat = [sct.output_path 'mat_moco/'];
-%             param.output_path = [sct.output_path 'tmp_moco/'];
-%             param.fname_data = [sct.dmri.path,sct.dmri.file];
-%             param.fname_data_moco = [sct.dmri.file_dwi,sct.dmri.suffix_moco,'_',num2str( iGroup)];
-%             param.fname_target = [sct.dmri.path,fname_target{ iGroup}];
-%             param.nt = sct.dmri.nt;
-%             param.nz = sct.dmri.nz;
-%             param.fsloutput = fsloutput;
-%             param.index = sct.dmri.group_indexes{iGroup}; % correct volumes of group number  iGroup
-%             param.fname_log = sct.log;
-%             param.suffix = sct.dmri.suffix_moco;
-%             
-%             j_mri_moco_v8(param);
-%             save([sct.output_path 'workspace.mat'])
-%             delete(['tmp.dmri.data_croped_splitT',sct.dmri.suffix_moco,'*']);
-%             
-%             
-%             % Average DWI images
-%             j_disp(sct.log,['\nAverage DWI images...'])
-%             fname_dwi_merge_i = [sct.dmri.file_dwi,sct.dmri.suffix_moco,'_',num2str( iGroup)];
-%             fname_dwi_mean_i    = [sct.dmri.file_dwi,sct.dmri.suffix_moco,'_mean','_',numT{iGroup}];
-%             cmd = [fsloutput,'fslmaths ',fname_dwi_merge_i,' -Tmean ',fname_dwi_mean_i];
-%             j_disp(sct.log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
-%             j_disp(sct.log,['.. File created: ',sct.dmri.file_dwi,sct.dmri.suffix_moco,'_mean','_',numT{iGroup}]);
-%             
-%         end
-%         
-%         
-%         
-%         % Merge all DWI_mean_group images
-%         j_disp(sct.log,['\nMerging all DW files...'])
-%         fname_dwi_merge = [sct.dmri.file_dwi,sct.dmri.suffix_moco,'_mean','_Groups'];
-%         cmd = [fsloutput,'fslmerge -t ',fname_dwi_merge];
-%         for iGroup = 1:sct.dmri.nb_groups
-%             cmd = cat(2,cmd,[' ',sct.dmri.file_dwi,sct.dmri.suffix_moco,'_mean','_',numT{iGroup}]);
-%         end
-%         j_disp(sct.log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
-%         j_disp(sct.log,['.. File created: ',sct.dmri.file_dwi,sct.dmri.suffix_moco,'_mean','_Groups'])
-%         
-%         % Average all DWI images
-%         j_disp(sct.log,['\nAverage all DWI images...'])
-%         fname_dwi_mean    = [sct.dmri.file_dwi,sct.dmri.suffix_moco,'_mean'];
-%         cmd = [fsloutput,'fslmaths ',fname_dwi_merge,' -Tmean ',fname_dwi_mean];
-%         j_disp(sct.log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
-%         j_disp(sct.log,['.. File created: ',fname_dwi_mean])
-        
-        % call motion corection module to registrate dwi_mean_iGroup on dwi_mean total
-        j_disp(sct.log,['\n\n\n\n\n====================================================================='])
-        j_disp(sct.log,['    STEP 1/2 : Estimate motion correction of dwi_mean_iGroup on dwi_mean_total '])
-        j_disp(sct.log,['=====================================================================\n'])
-        param = sct.dmri.moco_intra;
-        param.todo = 'estimate'; % only estimate matrix (to minimize interpolation)
-        param.split_data = 1;
-        param.folder_mat = [sct.output_path, 'tmp.dmri.group_mean.mat/'];
-        param.output_path = [sct.output_path, 'tmp_moco/'];
-        param.fname_data = fname_dwi_groups_means_merge;
-        param.fname_target = fname_dwi_mean;
-        param.fsloutput = fsloutput;
-        param.fname_log = sct.log;
-        param.suffix = sct.dmri.suffix_moco;
-        
-        j_mri_moco_v8(param);
-        save([sct.output_path 'workspace.mat'])
-        
-        
-        
-        % Copy registration matrix for every dwi based on dwi_groups_mean
-        if ~exist([sct.output_path 'mat_moco/']), mkdir([sct.output_path 'mat_moco/']), end
-        for iGroup = 1:sct.dmri.nb_groups
-            for dwi = 1:length(sct.dmri.group_indexes{iGroup})
-                if sct.dmri.moco_intra.slicewise
-                    for i_Z = 1:sct.dmri.nz
-                        cmd = ['cp ',sct.output_path,'tmp.dmri.group_mean.mat/','mat.T',num2str(iGroup),'_Z', num2str(i_Z),'.txt', ' ',sct.output_path,'mat_moco/','mat.T',num2str(sct.dmri.group_indexes{iGroup}(dwi)), '_Z', num2str(i_Z),'.txt'];
-                        j_disp(sct.log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
-                    end
-                else
-                    cmd = ['cp ',sct.output_path,'tmp.dmri.group_mean.mat/','mat.T',numT{iGroup},'.txt',' ',sct.output_path,'mat_moco/','mat.T',numT{sct.dmri.group_indexes{iGroup}(dwi)},'.txt'];
-                    j_disp(sct.log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
-                end
-			end			
-        end
-        
-        % call motion corection module to registrate dwi_mean total on b0 mean with SPM
-        j_disp(sct.log,['\n\n\n\n\n====================================================================='])
-        j_disp(sct.log,['    STEP 2/2 : Estimate registration between each b0 on b0(end)'])
-        j_disp(sct.log,['=====================================================================\n'])
-        
-        % call motion correction module for b0 group
-        param = sct.dmri.moco_intra;
-        param.todo = 'estimate'; % only estimate matrix (to minimize interpolation)
-        param.split_data = 0;
-        param.fname_data_splitT = [sct.output_path, 'tmp.dmri.data_splitT'];
-        param.folder_mat = [sct.output_path,'mat_moco_b0/'];
-        param.output_path = [sct.output_path, 'tmp_b0_moco'];
-        param.fname_data = [sct.dmri.path,sct.dmri.file];
-        param.fname_data_moco = [sct.dmri.path,sct.dmri.file,sct.dmri.suffix_moco];
-        param.fname_target = [sct.output_path, 'tmp.dmri.data_splitT', numT{index_b0(end)}];
-        param.fsloutput = fsloutput;
-        param.index = sct.dmri.index_b0; % correct volumes of b0 group
-        param.fname_log = sct.log;
-        param.suffix = sct.dmri.suffix_moco;
-        if any(strcmp(who,'centerline')), param.centerline=centerline; end
-        
-        j_mri_moco_v8(param);
-        
-        
-        % Copy registration matrix of the closest dwi (closest to b0(1)) for all b0
-        [dummy_variable,I] = min(abs(index_b0(end)-index_dwi));
-        for iT = 1:length(index_b0)
-            if sct.dmri.moco_intra.slicewise
-                for i_Z = 1:sct.dmri.nz
-                    cmd = ['cp ',sct.output_path,'mat_moco/','mat.T',num2str(index_dwi(I)),'_Z', num2str(i_Z),'.txt', ' ',sct.output_path,'mat_moco/','mat.T',num2str(index_b0(iT)), '_Z', num2str(i_Z),'.txt'];
-                    j_disp(sct.log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
-                end
-            else
-                cmd = ['cp ',sct.output_path,'mat_moco/','mat.T',numT{index_dwi(I)},' ',sct.output_path,'mat_moco/','mat.T',numT{index_b0(iT)},'.txt'];
-                j_disp(sct.log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
-            end
-        end
-        
-        
-        % Note transformation matrix folder for subsequent correction
-        mat_folders.nb = mat_folders.nb + 1;
-        mat_folders.names{mat_folders.nb} = [sct.output_path 'mat_moco/'];
-        mat_folders.slicewise(mat_folders.nb) = sct.dmri.moco_intra.slicewise;
-        
-        % Note transformation matrix folder for subsequent correction
-        mat_folders.nb = mat_folders.nb + 1;
-        mat_folders.names{mat_folders.nb} = [sct.output_path 'mat_moco_b0/'];
-        mat_folders.slicewise(mat_folders.nb) = sct.dmri.moco_intra.slicewise;
-        save([sct.output_path 'workspace.mat'])
-    end
     
     %----------------------------------------------------------------------
     % Smooth estimated motion

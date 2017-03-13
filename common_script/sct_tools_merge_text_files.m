@@ -7,7 +7,7 @@ list_text=sct_tools_ls(text_files,1);
 % =========================================================================
 % DON'T CHANGE BELOW
 % =========================================================================
-
+if ~exist('transpose','var'), transpose=0; end
 if transpose
     for i_seq=1:length(list_text)
         unix(['sct_dmri_transpose_bvecs.py ' list_text{i_seq}]);

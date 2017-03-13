@@ -161,12 +161,10 @@ sct.dmri.suffix_crop                = '_crop';
 sct.dmri.upsample.do                = 0; % use this if you have a malloc error in Flirt. Flirt may need more voxels to compute
 
 % Intra-run motion correction
-sct.dmri.moco_intra.method              = in.method; % 'b0','dwi','dwi_lowbvalue','none' (N.B. 'b0' should only be used with data acquired with interspersed b0. Otherwise, PROVIDING SUFFICIENT SNR, use 'dwi').
+sct.dmri.moco_intra.method              = in.method; % 'b0','dwi_lowbvalue','none' (N.B. 'b0' should only be used with data acquired with interspersed b0. Otherwise, PROVIDING SUFFICIENT SNR, use 'dwi').
 sct.dmri.moco_intra.smooth_motion       = in.smooth_moco; % Apply a spline in time to estimated motion correction
-sct.dmri.schemefile                     = '';
 sct.dmri.moco_intra.gaussian_mask       = in.gaussian_mask; % Default: 0. Weigth with gaussian mask? Sigma in mm --> std of the kernel. Can be a vector ([sigma_x sigma_y])
-sct.dmri.moco_intra.dwi_group_size      = 10; % number of images averaged for 'dwi' method.
-sct.dmri.moco_intra.program             = 'ANTS';% 'FLIRT' or 'SPM' (slicewise not available with SPM.... put slicewise = 0)
+sct.dmri.moco_intra.program             = 'ANTS';% 'FLIRT' or 'ANTS' (slicewise not available with SPM.... put slicewise = 0)
 sct.dmri.moco_intra.ref                 = num2str(in.ref); % string. Either 'mean_b0' or 'X', X being the number of b0 to use for reference. E.g., sct.dmri.moco_intra.ref = '1' to register data to the first b=0 volume. !!! This flag is only valid if sct.dmri.moco_intra.method = 'b0'
 sct.dmri.moco_intra.slicewise		    = in.slicewise; % slice-by-slice motion correction. Put 0 for volume-based moco, 1 otherwise. 
 sct.dmri.moco_intra.cost_function_flirt	= 'normcorr'; % 'mutualinfo' | 'woods' | 'corratio' | 'normcorr' | 'normmi' | 'leastsquares'. Default is 'normcorr'.
