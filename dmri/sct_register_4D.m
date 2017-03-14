@@ -23,7 +23,7 @@ cmd=(['sct_apply_transfo -i ' files{ifile} ' -d data_2_1.nii.gz -w ' pwd filesep
 sct_unix(cmd)
 end
 
-sct_merge_nii(strrep(files,'.nii.gz','_reg.nii.gz'),['../' data1_basename '_reg' ext])
+sct_merge_nii(strrep(files,'.nii.gz','_reg.nii.gz'),[data1_basename '_reg' ext])
 
 cd ../
 unix(['rm -rf ' tmp_folder]);
