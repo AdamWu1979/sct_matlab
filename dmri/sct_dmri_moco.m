@@ -5,12 +5,12 @@ function sct_dmri_moco(varargin)
 % (3) MOTION CORRECTION
 %
 % USAGE:
-% >> sct_dmri_moco() --> calls a GUI
-% >> sct_dmri_moco(___,Name,Value)
+% >> SCT_DMRI_MOCO() --> calls a GUI
+% >> SCT_DMRI_MOCO(___,Name,Value)
 %
 % EXAMPLES:
-% >> sct_dmri_moco()
-% >> sct_dmri_moco('data','qspace.nii.gz','bvec','bvecs.txt','bval','bval.txt','crop','autobox','eddy',0,'ref',2)
+% >> SCT_DMRI_MOCO()
+% >> SCT_DMRI_MOCO('data','qspace.nii.gz','bvec','bvecs.txt','bval','bval.txt','crop','autobox','eddy',0,'ref',2,'smooth_moco',1,'abrupt_motion_index',[51 102])
 %
 % Option Names:
 %     bval  (bval text file)
@@ -20,7 +20,8 @@ function sct_dmri_moco(varargin)
 %     eddy : 0 | 1*
 %     interp : 'nearestneighbour', 'spline'*, 'sinc'
 %     gaussian_mask : <sigma>. Default: 0. Weigth with gaussian mask? Sigma in mm --> std of the kernel. Can be a vector ([sigma_x sigma_y])
-%     smooth_moco :   0 | 1*   
+%     smooth_moco :   <double> smoothing coefficient for time regularization (e.g. 1). Default: interactive.
+%     abrupt_motion_index : <vector of integers> # of the volumes before abrupt motion. Default: interactive.
 %     ref : # of the volume to use for reference
 %     bval_threshold : [700 10000] s/mm2. range of values used for
 %     registration.
@@ -37,7 +38,8 @@ addOptional(p,'data','');
 addOptional(p,'bvec','');
 addOptional(p,'bval','');
 addOptional(p,'scheme','');
-addOptional(p,'smooth_moco',1,@isnumeric);
+addOptional(p,'smooth_moco',-1,@isnumeric);
+addOptional(p,'abrupt_motion_index',-1,@isnumeric);
 addOptional(p,'apply_moco_on_croped',1,@isnumeric);
 interp={'nearestneighbour', 'spline', 'sinc'};
 addOptional(p,'interp','spline',@(x) any(validatestring(x,interp)));
@@ -168,7 +170,8 @@ sct.dmri.upsample.do                = 0; % use this if you have a malloc error i
 
 % Intra-run motion correction
 sct.dmri.moco_intra.do                  = 1;
-sct.dmri.moco_intra.smooth_motion       = in.smooth_moco; % Apply a spline in time to estimated motion correction
+sct.dmri.moco_intra.smooth_motion.smoothness = in.smooth_moco; % Apply a spline in time to estimated motion correction. -1: interactive. 0: no smoothing. >1: smoothing coeff.
+sct.dmri.moco_intra.smooth_motion.abruptmotion = in.abrupt_motion_index; % # of the volumes just before abrupt motion. If you merged volumes of size 51: [51 102 153 ...]
 sct.dmri.moco_intra.gaussian_mask       = in.gaussian_mask; % Default: 0. Weigth with gaussian mask? Sigma in mm --> std of the kernel. Can be a vector ([sigma_x sigma_y])
 sct.dmri.moco_intra.program             = 'ANTS';% 'FLIRT' or 'ANTS' (slicewise not available with SPM.... put slicewise = 0)
 sct.dmri.moco_intra.ref                 = num2str(in.ref); % string. Either 'mean_b0' or 'X', X being the number of b0 to use for reference. E.g., sct.dmri.moco_intra.ref = '1' to register data to the first b=0 volume. !!! This flag is only valid if sct.dmri.moco_intra.method = 'b0'

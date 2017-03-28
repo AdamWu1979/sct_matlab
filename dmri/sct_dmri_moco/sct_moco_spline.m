@@ -1,9 +1,15 @@
 function sct_moco_spline(fname_mat, varargin)
-% sct_moco_spline(fname_mat, fname_log(optional) )
-% sct_moco_spline('mat.*')
+% sct_moco_spline(fname_mat)
+% sct_moco_spline(fname_mat, fname_log, abrupt_motion_index, smoothness )
+%
+% sct_moco_spline('mat.*') --> calls an interactive GUI for selecting index of abrupt
+% motion and smoothness coefficient
+% sct_moco_spline('mat.*','log.txt',[51 102],1)
+
 dbstop if error
 if ~isempty(varargin), log_spline = varargin{1}; else log_spline = 'log_sct_moco_spline'; end
-if length(varargin)>1, ind_ab = varargin{2}; else ind_ab = []; end
+if length(varargin)>1, ind_ab = varargin{2}; else  ind_ab = -1; end
+if length(varargin)>2, smoothness = varargin{3}; else smoothness = -1; end
 
 
 j_disp(log_spline,['\nSmoothing Patient Motion...'])
@@ -34,28 +40,32 @@ end
 drawnow;
 
 %% Get abrupt motion volume #
-ind_ab = inputdlg('Enter space-separated numbers:',...
-             'Volume# before abrupt motion (starting at 1)',[1 150]);
-if isempty(ind_ab), ind_ab=[]; else ind_ab = str2num(ind_ab{:}); end
-j_disp(log_spline,['Abrupt motion on Volume #: ' num2str(ind_ab)])
+if min(ind_ab)<0
+    ind_ab = inputdlg('Enter space-separated numbers:',...
+        'Volume# before abrupt motion (starting at 1)',[1 150]);
+    if isempty(ind_ab), ind_ab=[]; else ind_ab = str2num(ind_ab{:}); end
+    j_disp(log_spline,['Abrupt motion on Volume #: ' num2str(ind_ab)])
+end
+ind_ab(ind_ab>=max(T) | ind_ab<=1)=[];
 ind_ab=double([0 ind_ab max(T)]);
 
 
 
 
 %% GENERATE SPLINE
-msgbox({'Use the slider (figure 28, bottom) to calibrate the smoothness of the regularization along time' 'Press any key when are done..'})
-
-hsl = uicontrol('Style','slider','Min',-10,'Max',0,...
-                'SliderStep',[1 1]./10,'Value',-2,...
-                'Position',[20 20 200 20]);
-set(hsl,'Callback',@(hObject,eventdata) GenerateSplines(X,Y,T,Z_index,ind_ab,10^(get(hObject,'Value')),color ))
-
-
-pause
-
-j_disp(log_spline,['Smooth using smoothness of ' num2str(10000*10^(get(hsl,'Value'))) '...'])
-[Xout, Yout]=GenerateSplines(X,Y,T,Z_index,ind_ab,10^(get(hsl,'Value')),color);
+if smoothness<0
+    msgbox({'Use the slider (figure 28, bottom) to calibrate the smoothness of the regularization along time' 'Press any key when are done..'})
+    
+    hsl = uicontrol('Style','slider','Min',-10,'Max',0,...
+        'SliderStep',[1 1]./10,'Value',-2,...
+        'Position',[20 20 200 20]);
+    set(hsl,'Callback',@(hObject,eventdata) GenerateSplines(X,Y,T,Z_index,ind_ab,10^(get(hObject,'Value')),color ))
+    
+    pause
+    smoothness = 10000*10^(get(hsl,'Value'));
+end
+j_disp(log_spline,['Smooth using smoothness of ' num2str(smoothness) '...'])
+[Xout, Yout]=GenerateSplines(X,Y,T,Z_index,ind_ab,smoothness/10000,color);
 j_disp(log_spline,['...done!'])
 %% SAVE MATRIX
 j_progress('\nSave Matrix...')
