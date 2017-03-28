@@ -29,7 +29,7 @@ function sct_dmri_moco(varargin)
 dbstop if error
 p = inputParser;
 crops = {'manual', 'box', 'none', 'centerline', 'autobox'};
-addOptional(p,'crop','autobox',@(x) any(validatestring(x,crops)));
+addOptional(p,'crop','none',@(x) any(validatestring(x,crops)));
 addOptional(p,'eddy',1,@isnumeric);
 moco_methods={'b0','dwi_lowbvalue','none'};
 addOptional(p,'method','dwi_lowbvalue',@(x) any(validatestring(x,moco_methods)));
@@ -47,6 +47,7 @@ addOptional(p,'gaussian_mask',0,@isnumeric);
 addOptional(p,'slicewise',1,@isnumeric);
 addOptional(p,'ref',0,@isnumeric);
 addOptional(p,'bval_threshold',[700 10000],@isnumeric);
+
 
 parse(p,varargin{:})
 in=p.Results;
