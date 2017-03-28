@@ -877,7 +877,7 @@ else
     sct.dmri.file_bvals = [sct.dmri.path_bvals,sct.dmri.file_bvals];
     bvals = load(sct.dmri.file_bvals);
 end
-index_used = find(bvals>min(sct.dmri.moco_intra.bval_threshold) & bvals<max(sct.dmri.moco_intra.bval_threshold))';
+index_used = find(bvals>=min(sct.dmri.moco_intra.bval_threshold) & bvals<=max(sct.dmri.moco_intra.bval_threshold))';
 if isempty(index_used), error(['\nNo DWI between ' num2str(sct.dmri.moco_intra.bval_threshold) ' s/mm2 ... change bval_threshold option']); end
 
 sct.dmri.index_used = index_used; index_used=index_used(:);
