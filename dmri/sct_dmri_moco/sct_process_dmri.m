@@ -1084,7 +1084,7 @@ if sct.dmri.moco_intra.do
         param.suffix = sct.dmri.suffix_moco;
         param.fname_target = param.fname_data;
         j_mri_moco_v8(param);
-        save([sct.output_path 'workspace.mat'])
+        save([sct.output_path 'param_apply_j_mri_moco_v8.mat'], param)
         
         
         
