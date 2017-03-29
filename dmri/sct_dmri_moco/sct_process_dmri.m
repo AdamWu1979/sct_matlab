@@ -944,7 +944,7 @@ if sct.dmri.moco_intra.do
     % use target image from these data
     
     % identify target file
-    j_disp(sct.log,['.. Motion correction using DWI acquired with bvals in the range',sct.dmri.moco_intra.bval_threshold,' s/mm2'])
+    j_disp(sct.log,['.. Motion correction using DWI acquired with bvals in the range ',num2str(sct.dmri.moco_intra.bval_threshold),' s/mm2'])
 
     if ~str2num(sct.dmri.moco_intra.ref)
         fname_data = [sct.dmri.path,sct.dmri.file];
@@ -1035,8 +1035,8 @@ if sct.dmri.moco_intra.do
     
     %----------------------------------------------------------------------
     % Smooth estimated motion
-    if sct.dmri.moco_intra.smooth_motion
-        sct_moco_spline([sct.output_path 'mat_moco/*T*Z*.txt'], sct.log)
+    if sct.dmri.moco_intra.smooth_motion.smoothness~=0
+        sct_moco_spline([sct.output_path 'mat_moco/*T*Z*.txt'], sct.log, sct.dmri.moco_intra.smooth_motion.abruptmotion, sct.dmri.moco_intra.smooth_motion.smoothness)
     end
     
 else
