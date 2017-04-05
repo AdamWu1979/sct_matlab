@@ -47,7 +47,7 @@ if min(ind_ab)<0
     j_disp(log_spline,['Abrupt motion on Volume #: ' num2str(ind_ab)])
 end
 ind_ab(ind_ab>=max(T) | ind_ab<=1)=[];
-ind_ab=double([0 ind_ab max(T)]);
+ind_ab=double([0 ind_ab(:)' max(T)]);
 
 
 

@@ -78,15 +78,6 @@ else
 end
 
 
-% Add scripts to path
-batch_path= mfilename('fullpath');
-spinalcordtoolboxpath=[fileparts(fileparts(fileparts(batch_path))),filesep];
-list=dir([spinalcordtoolboxpath, 'src']);
-folders_scripts={list(cell2mat({list.isdir})).name};
-addpath([spinalcordtoolboxpath,'flirtsch'])
-for i_dir=1:length(folders_scripts)
-    addpath([spinalcordtoolboxpath, 'src/', folders_scripts{i_dir}]);
-end
 
 % =========================================================================
 % General Parameters 
@@ -101,7 +92,7 @@ mkdir(sct.output_path);
 
 % Misc
 sct.struct.file                     = 'sct'; % structure file name
-sct.shell                           = ''; % SHELL run by Matlab. Values are: 'bash' or 'tsh'.
+sct.shell                           = 'bash'; % SHELL run by Matlab. Values are: 'bash' or 'tsh'.
 sct.info                            = 'NeuroPoly'; % info
 sct.log                             = 'log_process.txt';
 sct.outputtype                      = 'NIFTI';

@@ -137,7 +137,7 @@ if ~exist(folder_mat,'dir'), mkdir(folder_mat), end
 if split_data
     j_disp(fname_log,['\nSplit along T dimension...'])
     cmd = [fsloutput,'fslsplit ',fname_data,' ',fname_data_splitT];
-    j_disp(fname_log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
+    j_disp(fname_log,['>> ',cmd]); [status result] = sct_unix(cmd); if status, error(result); end
 end
 numT = j_numbering(nt,4,0);
 
@@ -181,7 +181,7 @@ if isempty(fname_schedule)
     error('Schedule file was not found. Thanks for playing with us.')
 end
 j_disp(fname_log,['.. Schedule file: ',fname_schedule])
-unix(['cp ' fname_schedule ' ' schedule_file]);
+sct_unix(['cp ' fname_schedule ' ' schedule_file]);
 j_disp(fname_log,['.. File created (locally): ',schedule_file])
 
 
@@ -216,7 +216,7 @@ if slicewise
     fname_data_ref_splitZ = [output_path,'tmp_moco.target_splitZ'];
     cmd = [fsloutput,'fslsplit ',fname_target,' ',fname_data_ref_splitZ,' -z'];
     j_disp(fname_log,['>> ',cmd]);
-    [status result] = unix(cmd);
+    [status result] = sct_unix(cmd);
     if status, error(result); end
     numZ = j_numbering(nz,4,0);
 else
@@ -232,7 +232,7 @@ if mask
         if slicewise
             cmd=['fslsplit ' ref_weight ' ' fname_mask ' -z'];
             j_disp(fname_log,['>> ',cmd]);
-            [status result] = unix(cmd);
+            [status result] = sct_unix(cmd);
             if status, error(result); end
             j_disp(fname_log,['.. File created: ',fname_mask])
             for iZ=1:dims(3)
@@ -297,7 +297,7 @@ for indice_index = 1:length(param.index)
         fname_data_splitT_splitZ = [fname_data_splitT_num{iT},'_splitZ'];
         cmd = [fsloutput,'fslsplit ',fname_data_splitT_num{iT},' ',fname_data_splitT_splitZ,' -z'];
         j_disp(fname_log,['>> ',cmd]);
-        [status, result] = unix(cmd);
+        [status, result] = sct_unix(cmd);
         if status, error(result); end
         
         
@@ -312,8 +312,8 @@ for indice_index = 1:length(param.index)
                 out= [folder_mat 'nifti_reg' filesep num2str(iT) '.nii'];
                 cmd = ['isct_antsSliceRegularizedRegistration -p 2 --output [' mat_tmp ', ' out '] --transform Translation[0.1] --metric MeanSquares[ ' fname_target '.nii* , ' fname_data_splitT_num{iT} '.nii*  , 1 , 16 , Regular , 0.2 ] --iterations 20 -f 1 -s 0.2'];
                 j_disp(fname_log,['>> ',cmd]);
-                [status, result] = unix(cmd); if status, error(result); end
-                unix(['rm ' out ' ' mat_tmp 'W* ' mat_tmp 'I*'])
+                [status, result] = sct_unix(cmd); if status, error(result); end
+                sct_unix(['rm ' out ' ' mat_tmp 'W* ' mat_tmp 'I*'])
                 mat_tmp=[mat_tmp 'TxTy_poly.csv'];
             else 
                 program = 'FLIRT';
@@ -353,7 +353,7 @@ for indice_index = 1:length(param.index)
                         case 'FLIRT'
                             j_disp(fname_log,['Process with FLIRT'])
                             cmd = [fsloutput,'flirt -schedule ', schedule_file, ' -in ',fname_data_splitT_splitZ_num{iT,iZ},' -ref ',fname_data_ref_splitZ_num{iZ},' -omat ',fname_mat{iT,iZ},' -out ',fname_data_splitT_splitZ_moco_num{iT,iZ},' -cost ',cost_function_flirt,fslmask{iZ},' ',flirt_options];
-                            j_disp(fname_log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
+                            j_disp(fname_log,['>> ',cmd]); [status result] = sct_unix(cmd); if status, error(result); end
                         case 'SPM'
                             j_disp(fname_log,['Process with SPM'])
                             %put ".nii" extension on files name
@@ -388,11 +388,11 @@ for indice_index = 1:length(param.index)
                         case 'FLIRT'
                             j_disp(fname_log,['Process with FLIRT'])
                             cmd = [fsloutput,'flirt -in ',fname_data_splitT_splitZ_num{iT,iZ},' -ref ',fname_data_ref_splitZ_num{iZ},' -applyxfm -init ',fname_mat{iT,iZ},' -out ',fname_data_splitT_splitZ_moco_num{iT,iZ},' ',flirt_options];
-                             j_disp(fname_log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
+                             j_disp(fname_log,['>> ',cmd]); [status result] = sct_unix(cmd); if status, error(result); end
                         case 'ANTS'
                             j_disp(fname_log,['Process with FLIRT'])
                             cmd = [fsloutput,'flirt -in ',fname_data_splitT_splitZ_num{iT,iZ},' -ref ',fname_data_ref_splitZ_num{iZ},' -applyxfm -init ',fname_mat{iT,iZ},' -out ',fname_data_splitT_splitZ_moco_num{iT,iZ},' ',flirt_options];
-                             j_disp(fname_log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
+                             j_disp(fname_log,['>> ',cmd]); [status result] = sct_unix(cmd); if status, error(result); end
                         case 'SPM'
                             j_disp(fname_log,['Process with SPM'])
                             fname_data_splitT_splitZ_num_ext{iT,iZ}=[fname_data_splitT_splitZ_num{iT,iZ},'.nii'];
@@ -418,7 +418,7 @@ for indice_index = 1:length(param.index)
                         case 'FLIRT'
                             j_disp(fname_log,['Process with FLIRT'])
                             cmd = [fsloutput,'flirt -schedule ', schedule_file, ' -in ',fname_data_splitT_splitZ_num{iT,iZ},' -ref ',fname_data_ref_splitZ_num{iZ},' -out ',fname_data_splitT_splitZ_moco_num{iT,iZ},' -omat ',fname_mat{iT,iZ},' -cost ', cost_function_flirt,fslmask{iZ},' ',flirt_options];
-                             j_disp(fname_log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
+                             j_disp(fname_log,['>> ',cmd]); [status result] = sct_unix(cmd); if status, error(result); end
                         case 'SPM'
                             j_disp(fname_log,['Process with SPM'])
                             % put ".nii" extension on files name
@@ -460,7 +460,7 @@ for indice_index = 1:length(param.index)
             end
             
             if strcmp(program , 'FLIRT') || strcmp(program , 'ANTS')
-                j_disp(fname_log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
+                j_disp(fname_log,['>> ',cmd]); [status result] = sct_unix(cmd); if status, error(result); end
             end
             
             % Check transformation absurdity
@@ -483,12 +483,12 @@ for indice_index = 1:length(param.index)
             for iZ = 1:nz
                 cmd = strcat(cmd,[' ',fname_data_splitT_splitZ_moco_num{iT,iZ}]);
             end
-            j_disp(fname_log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
+            j_disp(fname_log,['>> ',cmd]); [status result] = sct_unix(cmd); if status, error(result); end
             
             % remove tmp files
             j_disp(fname_log,['Remove temporary splited files...'])
             cmd = ['rm -f ' fname_data_splitT_num{iT} '*'];
-            j_disp(fname_log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
+            j_disp(fname_log,['>> ',cmd]); [status result] = sct_unix(cmd); if status, error(result); end
         end
         
     else
@@ -638,14 +638,14 @@ if slicewise
         j_disp(fname_log,['Replace failed matrix T',num2str(fT(iT)), ' Z', num2str(fZ(iT))]);
         
         % rename failed matrix
-        unix(['mv ' fname_mat{fT(iT),fZ(iT)} ' ' fname_mat{fT(iT),fZ(iT)} '_failed']);
+        sct_unix(['mv ' fname_mat{fT(iT),fZ(iT)} ' ' fname_mat{fT(iT),fZ(iT)} '_failed']);
         % find good slice number fZ(iT)
         good_Zindex = find(gZ == fZ(iT));
         good_index = gT(good_Zindex)
         % find
         [dummy,I] = min(abs(good_index-fT(iT)));
         cmd = ['cp ' fname_mat{good_index(I),fZ(iT)} ' ' fname_mat{fT(iT),fZ(iT)}];
-        j_disp(fname_log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
+        j_disp(fname_log,['>> ',cmd]); [status result] = sct_unix(cmd); if status, error(result); end
         
         
     end
@@ -660,14 +660,14 @@ if ~strcmp(todo,'estimate')
         for indice_index = 1:length(param.index)
             cmd = cat(2,cmd,[' ',fname_data_splitT_moco_num{param.index(indice_index)}]);
         end
-        j_disp(fname_log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
+        j_disp(fname_log,['>> ',cmd]); [status result] = sct_unix(cmd); if status, error(result); end
         j_disp(fname_log,['.. File created: ',fname_data_moco])
         
         % Delete temp files
         if delete_tmp_files
             j_disp(fname_log,'\nDelete temporary files...')
             cmd = ['rm -rf ' output_path ' tmp_moco.*'];
-            j_disp(fname_log,['>> ',cmd]); [status result] = unix(cmd); if status, error(result); end
+            j_disp(fname_log,['>> ',cmd]); [status result] = sct_unix(cmd); if status, error(result); end
         end
         
     end
