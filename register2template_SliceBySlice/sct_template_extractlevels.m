@@ -20,9 +20,9 @@ for ifile =1:length(templatelist)
     template=load_nii([path templatelist{ifile}]);
     template_roi=template.img(:,:,z_lev);
     template_roi=make_nii(double(template_roi),[template.hdr.dime.pixdim(2:3) slicethickness],[],[]);
-    save_nii_v2(template_roi,['./template_roi/template/' sct_tool_remove_extension(templatelist{ifile},0) '_roi'])
+    save_nii_v2(template_roi,['./template_roi/template/' templatelist{ifile}])
 end
-sct_unix('FSLOUTPUTTYPE=NIFTI; fslmaths ./template_roi/template/PAM50_wm_roi.nii -mul 0.9 -div 0.6 -add ./template_roi/template/PAM50_gm_roi.nii -mul 0.6 ./template_roi/template/diffusion_template_roi.nii')
+sct_unix('FSLOUTPUTTYPE=NIFTI; fslmaths ./template_roi/template/PAM50_wm.nii.gz -mul 0.9 -div 0.6 -add ./template_roi/template/PAM50_gm.nii.gz -mul 0.6 ./template_roi/template/diffusion_template.nii.gz')
 
 [tractlist, path]=sct_tools_ls([sct_dir '/data/PAM50/atlas/PAM50_atlas*']);
 mkdir('template_roi/atlas')
@@ -30,5 +30,7 @@ for ifile =1:length(tractlist)
     tract=load_nii([path tractlist{ifile}]);
     tract_roi=tract.img(:,:,z_lev);
     tract_roi=make_nii(double(tract_roi),[template.hdr.dime.pixdim(2:3) slicethickness],[],[]);
-    save_nii_v2(tract_roi,['./template_roi/atlas/' sct_tool_remove_extension(tractlist{ifile},0) '_roi'])
+    save_nii_v2(tract_roi,['./template_roi/atlas/' tractlist{ifile}])
 end
+sct_unix(['cp ' sct_dir '/data/PAM50/atlas/info_label.txt ./template_roi/atlas/']);
+sct_unix(['cp ' sct_dir '/data/PAM50/template/info_label.txt ./template_roi/template/']);

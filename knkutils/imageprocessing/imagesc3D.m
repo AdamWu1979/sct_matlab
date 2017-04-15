@@ -10,6 +10,8 @@ function imagesc3D(im,cmap)
 %setfigurepos([50 50 500 500]);
 if nargin<2
     imagesc(makeimagestack(squeeze(im))); axis equal tight;
+elseif length(cmap)==1
+    imagesc(makeimagestack(squeeze(im),cmap)); axis equal tight;
 else
     imagesc(makeimagestack(squeeze(im)),cmap); axis equal tight;
 end

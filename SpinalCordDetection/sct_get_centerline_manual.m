@@ -159,5 +159,5 @@ if param.save
     
 end
 fname2=sct_tool_remove_extension(fname,1);
-save_nii_v2(uint8(centerline_nii),[fname2 '_centerline'],fname,2)
+save_nii_v2(uint8(centerline_nii),[fname2 '_centerline.nii.gz'],fname,2)
 end
