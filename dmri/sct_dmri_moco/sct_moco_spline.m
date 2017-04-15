@@ -41,11 +41,33 @@ drawnow;
 
 %% Get abrupt motion volume #
 if min(ind_ab)<0
-    ind_ab = inputdlg('Enter space-separated numbers:',...
-        'Volume# before abrupt motion (starting at 1)',[1 150]);
-    if isempty(ind_ab), ind_ab=[]; else ind_ab = str2num(ind_ab{:}); end
-    j_disp(log_spline,['Abrupt motion on Volume #: ' num2str(ind_ab)])
+        ind_ab = inputdlg('Enter space-separated numbers:',...
+            'Volume# before abrupt motion (starting at 1)',[1 150]);
+        if isempty(ind_ab), ind_ab=[]; else ind_ab = str2num(ind_ab{:}); end
+        j_disp(log_spline,['Abrupt motion on Volume #: ' num2str(ind_ab)])
 end
+
+% search for abrupt motion automatically using 1st slice in both Y
+% and X
+Y1 = Y(Z_index==1);
+abb = diff(Y1)>1;
+ind_abY = double([0 find([diff(~abb) 0 0]==1) max(T)]);
+X1 = X(Z_index==1);
+abb = diff(X1)>1;
+% combine both with precaution --> no abrupt motion closer than 2
+% volumes
+ind_abX = find([diff(~abb) 0 0]==1);
+ind_ab = unique([ind_abX ind_abY ind_ab]);
+ind_ab([true ~(diff(ind_ab)<3)]);
+%         % abrupt separetly
+%         ind_abX = double([0 find([diff(~abb) 0 0]==1) max(T)]);
+%         ind_ab = {ind_abX, ind_abY};
+
+if ~iscell(ind_ab)
+    ind_ab(ind_ab>=max(T) | ind_ab<=1)=[];
+    ind_ab=double([0 ind_ab max(T)]);
+end
+
 ind_ab(ind_ab>=max(T) | ind_ab<=1)=[];
 ind_ab=double([0 ind_ab(:)' max(T)]);
 
@@ -90,23 +112,14 @@ end
 
 
 function [Xout,Yout]=GenerateSplines(X,Y,T,Z_index,ind_ab,smoothness,color)
-
+if iscell(ind_ab), ind_abX = ind_ab{1}; ind_abY = ind_ab{2}; 
+else, ind_abX = ind_ab; ind_abY = ind_ab; 
+end
 figure(28), hold off,
 for iZ=unique(Z_index)
     Xtmp=X(Z_index==iZ); Ytmp=Y(Z_index==iZ); Ttmp=T(Z_index==iZ);
-    for iab=2:length(ind_ab)
-        disp(['Generate motion splines...'])
-        Tpiece=ind_ab(iab-1)+1:ind_ab(iab);
-        
-        index=Ttmp>ind_ab(iab-1) & Ttmp<=ind_ab(iab);% Piece index
-        if length(find(index))>1
-            Xout(iZ,Tpiece)=spline(Ttmp(index),Xtmp(index),smoothness,Tpiece); Yout(iZ,Tpiece)=spline(Ttmp(index),Ytmp(index),smoothness,Tpiece);
-        else
-            [~,closestT_l]=min(abs(Ttmp-mean([ind_ab(iab), ind_ab(iab-1)])));
-            Xout(iZ,Tpiece)=Xtmp(closestT_l);
-            Yout(iZ,Tpiece)=Ytmp(closestT_l);
-        end
-    end
+    Xout(iZ,:) = spline_piecewise(ind_abX,Ttmp,Xtmp,smoothness);
+    Yout(iZ,:) = spline_piecewise(ind_abY,Ttmp,Ytmp,smoothness);
     % plot splines
     Ttotal=1:max(T);
     subplot(2,1,1); plot(T(Z_index==iZ),X(Z_index==iZ),'+','Color',color(iZ,:)); ylim([min(X)-0.5 max(X)+0.5]); hold on
@@ -116,6 +129,21 @@ for iZ=unique(Z_index)
     subplot(2,1,2); plot(Ttotal,Yout(iZ,:),'-','Color',color(iZ,:));  ylim([min(Y)-0.5 max(Y)+0.5]); legend('raw moco', 'smooth moco', 'Location', 'NorthEast' ); grid on; ylabel( 'Y Displacement (mm)' ); xlabel('volume #');
 end
 drawnow;
+
+
+function Xout = spline_piecewise(ind_ab,Ttmp,Xtmp,smoothness)
+for iab=2:length(ind_ab)
+    disp(['Generate motion splines...'])
+    Tpiece=ind_ab(iab-1)+1:ind_ab(iab);
+    
+    index=Ttmp>ind_ab(iab-1) & Ttmp<=ind_ab(iab);% Piece index
+    if length(find(index))>1
+        Xout(1,Tpiece)=spline(Ttmp(index),Xtmp(index),smoothness,Tpiece);
+    else
+        [~,closestT_l]=min(abs(Ttmp-mean([ind_ab(iab), ind_ab(iab-1)])));
+        Xout(1,Tpiece)=Xtmp(closestT_l);
+    end
+end
 
 
 function M_motion_t_smooth = spline(T,M_motion_t,smoothness,Tout)
