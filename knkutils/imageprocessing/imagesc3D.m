@@ -11,7 +11,7 @@ function imagesc3D(im,cmap,standardscore)
 if exist('standardscore','var') && standardscore
     im = reshape2D_undo(zscore(reshape2D(im,3)')',3,size(im));
 end
-if ~nargin<2 || isempty(cmap)
+if nargin<2 || isempty(cmap)
     imagesc(makeimagestack(squeeze(im))); axis equal tight;
 elseif length(cmap)==1
     imagesc(makeimagestack(squeeze(im),cmap)); axis equal tight;

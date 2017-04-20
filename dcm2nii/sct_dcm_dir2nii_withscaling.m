@@ -1,8 +1,9 @@
 function sct_dcm_dir2nii_withscaling(dcmdir)
 % sct_dcm_dir2nii_withscaling('./*.dcm')
-% currentdirectory=pwd;
-% [path, name, ext]=fileparts(dcmdir); dcmdir=[name, ext];
-% cd(path)
+currentdirectory=pwd;
+[path, name, ext]=fileparts(dcmdir); dcmdir=[name, ext];
+if isempty(path), path = pwd; end
+cd(path)
 [Series, desc]=sct_dcm_dir_SeriesList(dcmdir,'Y');
 for i=1:length(Series)
     dicm2nii(Series{i},[Series{i} filesep]);
@@ -14,5 +15,5 @@ for iSerie=find(~cellfun(@isempty,strfind(Series,'Scaled')))
         j_dmri_autoscale([Series{iSerie} filesep fnifti.name],[Series{iSerie} filesep dcmdir]);
     end
 end
-% cd(currentdirectory)
+cd(currentdirectory)
 

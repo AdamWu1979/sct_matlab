@@ -1,4 +1,4 @@
-function sct_moco_spline(fname_mat, varargin)
+function [Xout, Yout] = sct_moco_spline(fname_mat, varargin)
 % sct_moco_spline(fname_mat)
 % sct_moco_spline(fname_mat, fname_log, abrupt_motion_index, smoothness )
 %

@@ -309,11 +309,10 @@ for indice_index = 1:length(param.index)
                 j_disp(fname_log,['Process with ANTS'])
                 mat_tmp=[folder_mat,'mat.T',num2str(iT),'_tmp'];
                 if ~exist([folder_mat 'nifti_reg'],'dir'), mkdir([folder_mat 'nifti_reg']); end
-                out= [folder_mat 'nifti_reg' filesep num2str(iT) '.nii'];
-                cmd = ['isct_antsSliceRegularizedRegistration -p 2 --output [' mat_tmp ', ' out '] --transform Translation[0.1] --metric MeanSquares[ ' fname_target '.nii* , ' fname_data_splitT_num{iT} '.nii*  , 1 , 16 , Regular , 0.2 ] --iterations 20 -f 1 -s 0.2'];
+                cmd = ['isct_antsSliceRegularizedRegistration -p 2 --output [' mat_tmp '] --transform Translation[0.1] --metric MeanSquares[ ' fname_target '.nii* , ' fname_data_splitT_num{iT} '.nii*  , 1 , 16 , Regular , 0.2 ] --iterations 20 -f 1 -s 3'];
                 j_disp(fname_log,['>> ',cmd]);
                 [status, result] = sct_unix(cmd); if status, error(result); end
-                sct_unix(['rm ' out ' ' mat_tmp 'W* ' mat_tmp 'I*'])
+                sct_unix(['rm ' mat_tmp 'W* ' mat_tmp 'I*'])
                 mat_tmp=[mat_tmp 'TxTy_poly.csv'];
             else 
                 program = 'FLIRT';
@@ -459,7 +458,7 @@ for indice_index = 1:length(param.index)
                     
             end
             
-            if strcmp(program , 'FLIRT') || strcmp(program , 'ANTS')
+            if strcmp(program , 'FLIRT') % || strcmp(program , 'ANTS')
                 j_disp(fname_log,['>> ',cmd]); [status result] = sct_unix(cmd); if status, error(result); end
             end
             
@@ -469,7 +468,7 @@ for indice_index = 1:length(param.index)
             if ( abs(M_transfo(1,4)) > 10 || abs(M_transfo(2,4)) > 10 || abs(M_transfo(3,4) > 10) || abs(M_transfo(4,4) > 10) )
                 nb_fails = nb_fails + 1;
                 j_disp(fname_log,['failure #',num2str(nb_fails), ' this tranformation matrix is absurd, try others parameters (SPM, cost_function...) '])
-                msgbox(['failure #',num2str(nb_fails), ' : (ref: ',fname_data_ref_splitZ_num{iZ},', in: ',fname_data_splitT_splitZ_num{iT,iZ},') this tranformation matrix is absurd, try others parameters (SPM, cost_function...) '], 'Correction failure','warn')
+                %msgbox(['failure #',num2str(nb_fails), ' : (ref: ',fname_data_ref_splitZ_num{iZ},', in: ',fname_data_splitT_splitZ_num{iT,iZ},') this tranformation matrix is absurd, try others parameters (SPM, cost_function...) '], 'Correction failure','warn')
                 fail_mat(iT,iZ) = 1;
             else
                 fail_mat(iT,iZ) = 0;
@@ -617,7 +616,7 @@ for indice_index = 1:length(param.index)
         if ( abs(M_transfo(1,4)) > 10 || abs(M_transfo(2,4)) > 10 || abs(M_transfo(3,4) > 10) || abs(M_transfo(4,4) > 10) )
             nb_fails = nb_fails + 1;
             j_disp(fname_log,['failure #',num2str(nb_fails), ' this tranformation matrix is absurd, try others parameters (SPM, cost_function...) '])
-            msgbox(['failure #',num2str(nb_fails), ' : (ref: ',fname_target,', in: ',fname_data_splitT_num{iT},') this tranformation matrix is absurd, try others parameters (SPM, cost_function...) '], 'Correction failure','warn')
+            %msgbox(['failure #',num2str(nb_fails), ' : (ref: ',fname_target,', in: ',fname_data_splitT_num{iT},') this tranformation matrix is absurd, try others parameters (SPM, cost_function...) '], 'Correction failure','warn')
         end
     end
     
