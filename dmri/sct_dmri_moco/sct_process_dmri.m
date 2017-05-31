@@ -962,6 +962,7 @@ if sct.dmri.moco_intra.do
         
         num_used=round(get(hsl,'Value'));
         close(14)
+        num_used = index_used(num_used);
     else
         num_used = str2num(sct.dmri.moco_intra.ref);
     end
@@ -970,7 +971,7 @@ if sct.dmri.moco_intra.do
     j_disp(sct.log,['.. Extract b=0 images #',num2str(num_used),' to use for registration target'])
     
     fname_used = [sct.dmri.path,'ref_moco',num2str(num_used)];
-    cmd = [fsloutput,'fslroi ',fname_data,' ',fname_used,' ',num2str(index_used(num_used)-1),' 1'];
+    cmd = [fsloutput,'fslroi ',fname_data,' ',fname_used,' ',num2str(num_used-1),' 1'];
     j_disp(sct.log,['>> ',cmd]); [status, result] = unix(cmd); if status, error(result); end
     fname_target = ['ref_moco',num2str(num_used)];
     j_disp(sct.log,['.. Target image: "',fname_target,'"'])
@@ -1037,7 +1038,11 @@ if sct.dmri.moco_intra.do
     %----------------------------------------------------------------------
     % Smooth estimated motion
     if sct.dmri.moco_intra.smooth_motion.smoothness~=0
-        sct_moco_spline([sct.output_path 'mat_moco/*T*Z*.txt'], sct.log, sct.dmri.moco_intra.smooth_motion.abruptmotion, sct.dmri.moco_intra.smooth_motion.smoothness)
+        sct_moco_spline([sct.output_path 'mat_moco/*T*Z*.txt'], sct.log, sct.dmri.moco_intra.smooth_motion.abruptmotion, sct.dmri.moco_intra.smooth_motion.smoothness);
+        if mat_folders.nb<2
+            sct_moco_apply([sct.output_path 'mat_moco/*T*Z*.txt'],[sct.dmri.path,sct.dmri.file_raw],[sct.dmri.path,sct.dmri.file,sct.dmri.suffix_moco])
+            return;
+        end
     end
     
 else
@@ -1055,7 +1060,7 @@ end
 %
 if sct.dmri.moco_intra.do
     
-    if mat_folders.nb % mat_folders.nb = nb of transformations done
+    if mat_folders.nb>1 % mat_folders.nb = nb of transformations done
         
         j_disp(sct.log,['\n\n   Apply transformations'])
         j_disp(sct.log,['-----------------------------------------------'])
@@ -1086,7 +1091,6 @@ if sct.dmri.moco_intra.do
         param.fname_target = param.fname_data;
         j_mri_moco_v8(param);
         save([sct.output_path 'param_apply_j_mri_moco_v8.mat'], param)
-        
         
         
     end

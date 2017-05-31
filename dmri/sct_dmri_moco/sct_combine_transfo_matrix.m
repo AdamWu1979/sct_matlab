@@ -36,7 +36,7 @@ if slicewise == 1 % swape mat_folders.names to have a slicewise element first
     mat_folders.name{1}=mat_folders.names{i};
     mat_folders.names{i}=tmp_folder_name;
 end
-cmd = ['cp -r ',mat_folders.names{1},' ',fname_mat_final];
+cmd = ['cp -r ',mat_folders.names{1},'* ',fname_mat_final];
 j_disp(log_spline,['>> ',cmd]); [status result] = unix(cmd);
 
 

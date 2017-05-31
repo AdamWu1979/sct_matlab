@@ -2,6 +2,7 @@ function sct_dcm_dir2nii_withscaling(dcmdir)
 % sct_dcm_dir2nii_withscaling('./*.dcm')
 currentdirectory=pwd;
 [path, name, ext]=fileparts(dcmdir); dcmdir=[name, ext];
+if isempty(path), path = pwd; end
 cd(path)
 [Series, desc]=sct_dcm_dir_SeriesList(dcmdir,'Y');
 for i=1:length(Series)

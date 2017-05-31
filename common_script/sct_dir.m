@@ -1,6 +1,7 @@
 function SCT_DIR = sct_dir
 % SCT_DIR = sct_dir
 % Find spinalcordtoolbox directory
-[~,SCT_DIR]=unix('source sct_env; echo ${SCT_DIR}');
+[~,SCT_DIR]=unix('which sct_propseg');
+SCT_DIR = fileparts(fileparts(SCT_DIR));
 sd=strsplit(SCT_DIR); sd(cellfun(@isempty,sd))=[];
 SCT_DIR=sd{end};

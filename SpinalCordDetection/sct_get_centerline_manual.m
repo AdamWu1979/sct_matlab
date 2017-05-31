@@ -1,4 +1,4 @@
-function m_center_line = sct_get_centerline(fname,interval)
+function m_center_line = sct_get_centerline_manual(fname,interval)
 % sct_get_centerline(m_volume_raw [,interval])
 % INPUT :
 %     interval;
@@ -31,7 +31,7 @@ while strcmp(info{1},'no')
         img_buffer=m_volume(:,:,i);
         if param.close, close all; end
         f = figure(i+1-1);
-        set(f,'Position',[1 1 scrsz(3) scrsz(4)]), imagesc(img_buffer',[prctile(img_buffer(:),5), prctile(img_buffer(:),95)]), colormap gray, axis image
+        set(f,'Position',[1 1 scrsz(3) scrsz(4)]), imagesc(img_buffer',[prctile(img_buffer(:),1), prctile(img_buffer(:),99)]), colormap gray, axis image
         ylabel('y')
         xlabel('x')
         % --------------------
@@ -159,5 +159,5 @@ if param.save
     
 end
 fname2=sct_tool_remove_extension(fname,1);
-save_nii_v2(uint8(centerline_nii),[fname2 '_centerline'],fname,2)
+save_nii_v2(uint8(centerline_nii),[fname2 '_centerline.nii.gz'],fname,2)
 end

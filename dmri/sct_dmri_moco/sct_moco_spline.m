@@ -1,4 +1,4 @@
-function sct_moco_spline(fname_mat, varargin)
+function [Xout, Yout] = sct_moco_spline(fname_mat, varargin)
 % sct_moco_spline(fname_mat)
 % sct_moco_spline(fname_mat, fname_log, abrupt_motion_index, smoothness )
 %
@@ -58,7 +58,7 @@ abb = diff(X1)>1;
 % volumes
 ind_abX = find([diff(~abb) 0 0]==1);
 ind_ab = unique([ind_abX ind_abY ind_ab]);
-ind_ab([true ~(diff(ind_ab)<3)])
+ind_ab([true ~(diff(ind_ab)<3)]);
 %         % abrupt separetly
 %         ind_abX = double([0 find([diff(~abb) 0 0]==1) max(T)]);
 %         ind_ab = {ind_abX, ind_abY};
@@ -67,6 +67,9 @@ if ~iscell(ind_ab)
     ind_ab(ind_ab>=max(T) | ind_ab<=1)=[];
     ind_ab=double([0 ind_ab max(T)]);
 end
+
+ind_ab(ind_ab>=max(T) | ind_ab<=1)=[];
+ind_ab=double([0 ind_ab(:)' max(T)]);
 
 
 

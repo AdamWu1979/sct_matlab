@@ -1,4 +1,4 @@
-function sct_unix(cmd)
+function [status, result] = sct_unix(cmd)
 disp(['<strong>' cmd '</strong>']);
-status=unix(cmd);
-if status, disp('ERROR!!!!!!!!!!'); end
+[status, result] =unix(['bash -c "' cmd '"']);
+if status, disp('ERROR!!!!!!!!!!'); disp(result); end
