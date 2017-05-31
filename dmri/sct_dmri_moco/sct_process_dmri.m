@@ -163,7 +163,8 @@ j_disp(sct.log,['.. Masking:               ',sct.dmri.mask.method])
 fprintf('\n');
 j_disp(sct.log,'Get dimensions of the data...')
 fname_data = [sct.dmri.path,sct.dmri.file];
-[~, dims] = read_avw(fname_data);
+dat = load_nii_data(fname_data);
+dims = size(dat);
 sct.dmri.nx = dims(1);
 sct.dmri.ny = dims(2);
 sct.dmri.nz = dims(3);
