@@ -27,7 +27,7 @@ function j_dmri_reorganize_data(fname_data, fname_bvecs_source, fname_bvecs_targ
 
 % INITIALIZATION
 if nargin<3, help j_dmri_reorganize_data, return, end
-% dbstop if error; % debug if error
+% ; % debug if error
 if ~exist('opt'), opt = []; end
 if isfield(opt,'output_suffix'), output_suffix = opt.output_suffix; else output_suffix = 'ordered'; end
 if isfield(opt,'fname_log'), fname_log = opt.fname_log; else fname_log = 'log_j_dmri_reorganize_data.txt'; end

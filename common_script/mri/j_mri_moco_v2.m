@@ -42,7 +42,7 @@ function param = j_mri_moco_v2(param)
 % =========================================================================
 
 % debug if error
-dbstop if error
+
 
 % INITIALIZATIONS
 fname_data				= param.fname_data;

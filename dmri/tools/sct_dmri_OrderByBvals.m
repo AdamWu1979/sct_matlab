@@ -22,10 +22,10 @@ function sct_dmri_OrderByBvals(fname_data,fname_orderingfile,opt)
 % 
 % =========================================================================
 
-dbstop if error
+
 % INITIALIZATION
 if nargin<2, help sct_dmri_OrderByBvals, return, end
-% dbstop if error; % debug if error
+% ; % debug if error
 if ~exist('opt'), opt = []; end
 if isfield(opt,'output_suffix'), output_suffix = opt.output_suffix; else output_suffix = '_ordered'; end
 if isfield(opt,'fname_log'), fname_log = opt.fname_log; else fname_log = 'log_sct_dmri_OrderByBvals.txt'; end

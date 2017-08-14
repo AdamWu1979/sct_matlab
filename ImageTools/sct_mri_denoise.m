@@ -37,7 +37,7 @@ if nargin < 1
 end
 
 % INITIALIZATION
-dbstop if error; % debug if error
+; % debug if error
 if ~exist('sct'), sct = []; end
 
 

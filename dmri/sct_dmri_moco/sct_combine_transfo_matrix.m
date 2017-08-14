@@ -3,7 +3,7 @@ function slicewise = sct_combine_transfo_matrix(mat_folders, nt, varargin)
 % mat_folders.names      String
 % e.g.: mat_folders.names={'./mat_moco/', './mat_eddy/'};
 %       sct_combine_transfo_matrix(mat_folders,[666 4])
-dbstop if error
+
 
 
 if isempty(varargin), fname_mat_final = 'mat_final/'; else fname_mat_final=varargin{1}; end

@@ -8,7 +8,7 @@ function m_center_line = sct_get_centerline_manual(fname,interval)
 %     N : nb of slices
 %     columns 1 & 2 : coordinates of the slice
 %     column 3 : slice number
-dbstop if error
+
 param=struct;
 nii=load_nii_data(fname); m_volume_raw=nii; dims=size(nii);
 if nargin<2,interval=max(round(size(m_volume_raw,3)/10),1); end

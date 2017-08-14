@@ -12,7 +12,7 @@ function sct_register2template(file_reg,file_src,levels,file_ref,verbose)
 % file_ref = [sct_dir '/dev/template/diffusion_template.nii'];
 % use sct_template_extractlevels to warp atlas and templates
 %--------------------------------------------------------------------------
-dbstop if error
+
 
 if ~exist('verbose','var')
     verbose=false;

@@ -16,7 +16,7 @@ function [fslroi_input,minX,maxX,minY,maxY,minZ,maxZ]=sct_cropXY(data_file,varar
 % PARAM
 % margin around the spinal cord 30 --> crop around 3cm in X and Y
 
-dbstop if error
+
 
 [data_file,data_path, data_ext]=sct_tool_remove_extension(data_file,0);
 fname_data = [data_path,data_file];

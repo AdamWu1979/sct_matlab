@@ -94,7 +94,7 @@ function j_edit(varargin)
 			'end'
 			''
 			'% INITIALIZATION'
-			'dbstop if error; % debug if error'
+			'; % debug if error'
 			'if ~exist(''opt''), opt = []; end'
 			'if isfield(opt,''fname_log''), fname_log = opt.fname_log, else fname_log = ''log_$filename.txt''; end'
 			''

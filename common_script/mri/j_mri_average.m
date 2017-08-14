@@ -38,7 +38,7 @@ if nargin < 1
 end
 
 % INITIALIZATION
-dbstop if error; % debug if error
+; % debug if error
 if ~exist('opt'), opt = []; end
 if isfield(opt,'fname_average'), fname_average = opt.fname_average, else fname_average = 'data_average'; end
 if isfield(opt,'split_data'), split_data = opt.split_data, else split_data = 1; end

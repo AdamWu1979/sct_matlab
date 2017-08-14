@@ -24,7 +24,7 @@ function j_dmri_remove_interspersed_b0(fname_data, fname_bvecs)
 
 % INITIALIZATION
 if nargin<2, disp('Not enought arguments. Please type "help j_dmri_remove_interspersed_b0".'), return, end
-% dbstop if error; % debug if error
+% ; % debug if error
 if ~exist('opt'), opt = []; end
 if isfield(opt,'output_suffix'), output_suffix = opt.output_suffix, else output_suffix = 'clean'; end
 if isfield(opt,'fname_bvals'), fname_bvals = opt.fname_bvals, else fname_bvals = ''; end

@@ -30,7 +30,7 @@ function j_mri_merge(param)
 
 
 % debug if error
-dbstop if error
+
 
 % Check number of arguments
 if nargin < 1

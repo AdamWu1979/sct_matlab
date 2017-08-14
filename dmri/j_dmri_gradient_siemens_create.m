@@ -97,7 +97,7 @@ j_disp(fname_log,['=============================================================
 j_disp(fname_log,['.. Started: ',datestr(now)])
 
 % debug if error
-dbstop if error
+
 
 
 if strcmp(input_format,'siemens')

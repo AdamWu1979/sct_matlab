@@ -23,7 +23,7 @@ function j_mri_makeMosaic()
 
 
 % INITIALIZATION
-dbstop if error; % debug if error
+; % debug if error
 if ~exist('opt'), opt = []; end
 if ~isfield(opt,'fname_log'), opt.fname_log = 'log_j_mri_makeMosaic.txt'; end
 

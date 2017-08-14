@@ -3,7 +3,7 @@ function sct_register_SbS(src,dest)
 % example: sct_register_SbS qspace.nii template.nii
 [basename,path]=sct_tool_remove_extension(src,1);
 
-dbstop if error
+
 % move inputs to temp folder
 tmp_folder=sct_tempdir;
 sct_gunzip(src,tmp_folder,'src.nii');

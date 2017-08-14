@@ -9,7 +9,7 @@ function sct_register2template(file_reg,file_src,levels,file_ref,verbose)
 % ref_fname = '/Volumes/users_hd2/tanguy/data/Boston/2014-07/Connectome/template/PD_template.nii.gz';%'/home/django/tanguy/matlab/spinalcordtoolbox/data/template/MNI-Poly-AMU_WM.nii.gz';
 % levels_fname='/home/django/tanguy/matlab/spinalcordtoolbox/data/template/MNI-Poly-AMU_level.nii.gz';
 % %--------------------------------------------------------------------------
-dbstop if error
+
 
 if ~exist('verbose','var')
     verbose=false;

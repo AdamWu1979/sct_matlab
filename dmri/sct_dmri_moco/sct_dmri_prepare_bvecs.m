@@ -37,7 +37,7 @@ if nargin < 1
 end
 
 % INITIALIZATION
-dbstop if error; % debug if error
+; % debug if error
 status = 0;
 if ~exist('sct'), opt = []; end
 if isfield(sct,'fname_log'), fname_log = sct.fname_log, else fname_log = 'log_sct_dmri_prepare_bvecs.txt'; end
