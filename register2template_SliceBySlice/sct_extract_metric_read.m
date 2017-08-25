@@ -12,18 +12,11 @@ function [metriclabel, metriclabelmat] = sct_extract_metric_read(filename)
 
 %% Initialize variables.
 delimiter = ',';
-if nargin<=2
-    startRow = 1;
-    endRow = inf;
-end
+startRow = 6;
 
-%% Format string for each line of text:
-%   column1: double (%f)
-%	column2: text (%s)
-%   column3: double (%f)
-%	column4: double (%f)
+%% Read columns of data as strings:
 % For more information, see the TEXTSCAN documentation.
-formatSpec = '%f%s%f%f%[^\n\r]';
+formatSpec = '%s%s%s%s%s%[^\n\r]';
 
 %% Open the text file.
 fileID = fopen(filename,'r');
@@ -32,26 +25,66 @@ fileID = fopen(filename,'r');
 % This call is based on the structure of the file used to generate this
 % code. If an error occurs for a different file, try regenerating the code
 % from the Import Tool.
-dataArray = textscan(fileID, formatSpec, endRow(1)-startRow(1)+1, 'Delimiter', delimiter, 'CommentStyle', '#', 'ReturnOnError', false);
-for block=2:length(startRow)
-    frewind(fileID);
-    textscan(fileID, '%[^\n\r]', startRow(block)-1, 'ReturnOnError', false);
-    dataArrayBlock = textscan(fileID, formatSpec, endRow(block)-startRow(block)+1, 'Delimiter', delimiter, 'ReturnOnError', false);
-    for col=1:length(dataArray)
-        dataArray{col} = [dataArray{col};dataArrayBlock{col}];
-    end
-end
+textscan(fileID, '%[^\n\r]', startRow-1, 'WhiteSpace', '', 'ReturnOnError', false);
+dataArray = textscan(fileID, formatSpec, 'Delimiter', delimiter, 'ReturnOnError', false);
 
 %% Close the text file.
 fclose(fileID);
 
-%% Post processing for unimportable data.
-% No unimportable data rules were applied during the import, so no post
-% processing code is included. To generate code which works for
-% unimportable data, select unimportable cells in a file and regenerate the
-% script.
+%% Convert the contents of columns containing numeric strings to numbers.
+% Replace non-numeric strings with NaN.
+raw = repmat({''},length(dataArray{1}),length(dataArray)-1);
+for col=1:length(dataArray)-1
+    raw(1:length(dataArray{col}),col) = dataArray{col};
+end
+numericData = NaN(size(dataArray{1},1),size(dataArray,2));
 
-%% Create output variable
-dataArray([1, 3, 4]) = cellfun(@(x) num2cell(x), dataArray([1, 3, 4]), 'UniformOutput', false);
-metriclabel = [dataArray{1:end-1}];
-metriclabelmat = cell2mat(metriclabel(:,[1 3 4]));
+for col=[1,3,4,5]
+    % Converts strings in the input cell array to numbers. Replaced non-numeric
+    % strings with NaN.
+    rawData = dataArray{col};
+    for row=1:size(rawData, 1);
+        % Create a regular expression to detect and remove non-numeric prefixes and
+        % suffixes.
+        regexstr = '(?<prefix>.*?)(?<numbers>([-]*(\d+[\,]*)+[\.]{0,1}\d*[eEdD]{0,1}[-+]*\d*[i]{0,1})|([-]*(\d+[\,]*)*[\.]{1,1}\d+[eEdD]{0,1}[-+]*\d*[i]{0,1}))(?<suffix>.*)';
+        try
+            result = regexp(rawData{row}, regexstr, 'names');
+            numbers = result.numbers;
+            
+            % Detected commas in non-thousand locations.
+            invalidThousandsSeparator = false;
+            if any(numbers==',');
+                thousandsRegExp = '^\d+?(\,\d{3})*\.{0,1}\d*$';
+                if isempty(regexp(numbers, thousandsRegExp, 'once'));
+                    numbers = NaN;
+                    invalidThousandsSeparator = true;
+                end
+            end
+            % Convert numeric strings to numbers.
+            if ~invalidThousandsSeparator;
+                numbers = textscan(strrep(numbers, ',', ''), '%f');
+                numericData(row, col) = numbers{1};
+                raw{row, col} = numbers{1};
+            end
+        catch me
+        end
+    end
+end
+
+
+%% Split data into numeric and cell columns.
+rawNumericColumns = raw(:, [1,3,4,5]);
+rawCellColumns = raw(:, 2);
+
+
+%% Exclude rows with non-numeric cells
+I = ~all(cellfun(@(x) (isnumeric(x) || islogical(x)) && ~isnan(x),rawNumericColumns),2); % Find rows with non-numeric cells
+rawNumericColumns(I,:) = [];
+rawCellColumns(I,:) = [];
+
+%% Allocate imported array to column variable names
+metriclabelmat = cell2mat(rawNumericColumns(:,[1:3]));
+metriclabel = rawCellColumns(:, 1);
+metriclabelmat(:,2) = cell2mat(rawNumericColumns(:, 2));
+metriclabelmat(:,3)= cell2mat(rawNumericColumns(:, 3));
+
