@@ -7,7 +7,6 @@ classdef report_generator < handle
         output_dir;
         report_dir;
         css_dir;
-        img_dir;
     end
     
     %% Private Properties
@@ -99,12 +98,12 @@ classdef report_generator < handle
             if ~exist('caption','var'), caption = ''; end
             if ~exist('align','var'), align = 'left'; end
             if isempty(fig), return; end
-            while exist(fullfile(obj.img_dir,sprintf('fig%d_%d.png', obj.figure_count,1)),'file')
+            while exist(fullfile(obj.report_dir,'img',sprintf('fig%d_%d.png', obj.figure_count,1)),'file')
                 obj.figure_count = obj.figure_count+1;
             end
             for ff=1:length(fig)
                 fname = sprintf('fig%d_%d.png', obj.figure_count,ff);
-                figurepath = [obj.img_dir filesep fname];
+                figurepath = [obj.report_dir filesep 'img' filesep fname];
                 saveas(fig(ff), figurepath);
             end
             obj.print(sprintf('<div class="img_container %s">\n', align));
@@ -152,7 +151,7 @@ classdef report_generator < handle
             % Setup the report directory
             obj.report_dir = [obj.output_dir filesep obj.name];
             obj.css_dir = [obj.report_dir filesep 'css'];
-            obj.img_dir = [obj.report_dir filesep 'img'];
+            img_dir = [obj.report_dir filesep 'img'];
             % Create report subfolders
             if ~exist(obj.report_dir,'dir')
                 mkdir(obj.report_dir);
@@ -160,8 +159,8 @@ classdef report_generator < handle
             if ~exist(obj.css_dir,'dir')
                 mkdir(obj.css_dir);
             end
-            if ~exist(obj.img_dir,'dir')
-                mkdir(obj.img_dir);
+            if ~exist(img_dir,'dir')
+                mkdir(img_dir);
             end
             obj.stylesheet(fullfile(fileparts(which(mfilename)),'res/css/default.css'))
         end

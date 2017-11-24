@@ -64,7 +64,7 @@ function j_dmri_eddyCorrect(fname_data, fname_bvecs, opt)
 
 
 % debug if error
-dbstop if error
+
 
 % Check number of arguments
 if nargin < 2

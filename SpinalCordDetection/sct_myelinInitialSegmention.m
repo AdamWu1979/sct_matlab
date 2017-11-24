@@ -1,7 +1,7 @@
 function [initialArray, axonBW] = myelinInitialSegmention(im, axonBW, backBW, verbose,snake,radialProfileMaxLength,khomo_off)
 % [initialArray, axonBW] = myelinInitialSegmention(im, axonBW, backBW, verbose,snake)
 % exemple: [AxonArray] = myelinInitialSegmention(img, chosenAxon, backBW,1,0);
-dbstop if error
+
 if nargin<4, verbose = false; end;
 if nargin<5, snake = false; end;
 

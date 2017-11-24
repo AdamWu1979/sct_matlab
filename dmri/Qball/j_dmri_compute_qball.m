@@ -33,7 +33,7 @@ function j_dmri_compute_qball(fname_data, fname_bvecs, opt)
 
 % INITIALIZATION
 sh_order		= [0 6 0 15 0 28 0 45 0 0 0 91 0 0 0 153]; % nb of coefficients given the max order of SH decomposition
-dbstop if error; % debug if error
+; % debug if error
 if ~exist('opt'), opt = []; end
 if ~isfield(opt,'fname_log'), opt.fname_log = 'log_j_dmri_compute_qball.txt'; end
 if ~isfield(opt,'method'), opt.method = 'qball'; end

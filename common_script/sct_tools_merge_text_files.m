@@ -1,9 +1,12 @@
 
 function sct_tools_merge_text_files(text_files, output,transpose)
 % sct_merge_text_files('fsems_*.bvec', output, transpose?)
-dbstop if error
-list_text=sct_tools_ls(text_files,1);
 
+if ~iscell(text_files)
+list_text=sct_tools_ls(text_files,1);
+else
+    list_text = text_files;
+end
 % =========================================================================
 % DON'T CHANGE BELOW
 % =========================================================================

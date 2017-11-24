@@ -26,7 +26,7 @@ function sct_dmri_moco(varargin)
 %     bval_threshold : [700 10000] s/mm2. range of values used for
 %     registration.
 
-dbstop if error
+
 p = inputParser;
 crops = {'manual', 'box', 'none', 'centerline', 'autobox'};
 addOptional(p,'crop','none',@(x) any(validatestring(x,crops)));

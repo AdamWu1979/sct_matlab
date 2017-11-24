@@ -51,7 +51,7 @@ function param = j_mri_moco_v3(param)
 % =========================================================================
 
 % debug if error
-dbstop if error
+
 
 
 

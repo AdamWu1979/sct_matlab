@@ -6,7 +6,7 @@ function [Xout, Yout] = sct_moco_spline(fname_mat, varargin)
 % motion and smoothness coefficient
 % sct_moco_spline('mat.*','log.txt',[51 102],1)
 
-dbstop if error
+
 if ~isempty(varargin), log_spline = varargin{1}; else log_spline = 'log_sct_moco_spline'; end
 if length(varargin)>1, ind_ab = varargin{2}; else  ind_ab = -1; end
 if length(varargin)>2, smoothness = varargin{3}; else smoothness = -1; end

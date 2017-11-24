@@ -1,4 +1,4 @@
-dbstop if error
+
 list=dir('MR*');
 a={};
 for i={list.name}

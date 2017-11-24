@@ -39,7 +39,7 @@ function sct_vertebral_labelling(nifti, centerline, varargin)
 % THE SOFTWARE.
 
 
-dbstop if error
+
 
 p=inputParser;
 

@@ -10,7 +10,7 @@ function [Series, desc]=sct_dcm_dir_SeriesList(dcmdir,varargin)
 %   desc(idcm).SeriesNumber : corresponding run number
 %   desc(idcm).DicomName : Dicom filename
 
-dbstop if error
+
 
 [list_dcm, path]=sct_tools_ls(dcmdir,0);
 currentdirectory=pwd;

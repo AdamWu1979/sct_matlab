@@ -71,7 +71,7 @@ function varargout = j_display_odf(odf,varargin)
 % =========================================================================
 
 
-dbstop if error
+
 
 % default parameters
 coord				= 'amp';

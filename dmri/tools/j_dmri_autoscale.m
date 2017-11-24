@@ -21,7 +21,7 @@ function j_dmri_autoscale(fname_nifti,fname_dicom,opt)
 % 2012-03-18: enable inputs
 % 2012-03-18: doesn't use MATLAB's dicominfo any more
 % =========================================================================
-dbstop if error
+
 
 % Check parameters
 if nargin<2, help j_dmri_autoscale, return, end

@@ -18,9 +18,8 @@ movefile([sct_tool_remove_extension(data,0) '.nii'], 'data.nii')
 % step2
 
 sct_dmri_splitin2('data',motionPos,[1 2]);
-
-sct_dmri_splitin2('data_1',1,1);
-sct_dmri_splitin2('data_2',1,1);
+sct_unix('fslmath data_1 -Tmean data_1_1');
+sct_unix('fslmath data_2 -Tmean data_2_1');
 
 unix(['sct_orientation -i data_1_1.nii.gz -s RPI -o data_1_1.nii.gz']);
 cmd=(['sct_register_multimodal -i data_2_1.nii.gz -d data_1_1.nii.gz -p step=1,algo=slicereg2d_translation']);
