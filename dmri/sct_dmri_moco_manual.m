@@ -26,9 +26,30 @@ cmd=(['sct_register_multimodal -i data_2_1.nii.gz -d data_1_1.nii.gz -p step=1,a
 sct_unix(cmd)
 
 cmd=(['sct_apply_transfo -i data_1.nii.gz -d data_2_1.nii.gz -w ' pwd filesep 'warp_data_1_12data_2_1.nii.gz -o ' pwd filesep 'data_1_reg.nii.gz']);
+
 sct_unix(cmd)
 
-cmd=['fslmerge -t ' data_basename '_reg data_1_reg.nii data_2.nii.gz'];
+% files = sct_splitTandrename('data_1.nii.gz');
+  files = sct_splitTandrename('data_2.nii.gz');
+  
+  cmd=(['sct_apply_transfo -i ' files{1} ' -d data_1_1.nii.gz -w warp_data_2_12data_1_1.nii.gz -o data_2_reg.nii.gz']);
+  sct_unix(cmd)
+% cmd=(['sct_apply_transfo -i ' files{1} ' -d data_2_1.nii.gz -w warp_data_1_12data_2_1.nii.gz -o data_1_reg.nii.gz']);
+% sct_unix(cmd)
+
+for ff=2:length(files)
+    cmd=(['sct_apply_transfo -i ' files{ff} ' -d data_1_1.nii.gz -w warp_data_2_12data_1_1.nii.gz -o data_2_reg_tmp.nii.gz']);
+    sct_unix(cmd)
+    sct_unix('fslmerge -t data_2_reg.nii.gz data_2_reg.nii.gz data_2_reg_tmp.nii.gz');
+end
+
+% for ff=2:length(files)
+%     cmd=(['sct_apply_transfo -i ' files{ff} ' -d data_2_1.nii.gz -w warp_data_1_12data_2_1.nii.gz -o data_1_reg_tmp.nii.gz']);
+%     sct_unix(cmd)
+%     sct_unix('fslmerge -t data_1_reg.nii.gz data_1_reg.nii.gz data_1_reg_tmp.nii.gz');
+% end
+
+cmd=['fslmerge -t ' data_basename '_reg data_1.nii.gz data_2_reg.nii.gz'];
 sct_unix(cmd)
 
 cd ../

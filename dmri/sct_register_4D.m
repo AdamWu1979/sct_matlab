@@ -14,13 +14,18 @@ sct_unix('fslmaths data_2.nii -Tmean data_2_1')
 % sct_dmri_splitin2('data_1',1,1);
 % sct_dmri_splitin2('data_2',1,1);
 
-%unix(['sct_orientation -i data_1_1.nii.gz -s RPI -o data_1_1.nii.gz']);
-cmd=(['sct_register_multimodal -i data_2_1.nii.gz -d data_1_1.nii.gz -param step=1,type=im,algo=translation']);
+
+if size(load_nii_data('data_1_1.nii.gz'),3)<2
+    cmd=(['sct_register_multimodal -i data_2_1.nii.gz -d data_1_1.nii.gz -param step=1,type=im,algo=translation']);
+else
+    cmd=(['sct_register_multimodal -i data_2_1.nii.gz -d data_1_1.nii.gz -param step=1,type=im,algo=slicereg']);
+end
 sct_unix(cmd)
 
+% 
+% cmd=(['sct_apply_transfo -i data_1.nii -d data_2_1.nii.gz -w warp_data_1_12data_2_1.nii.gz -o data_1_reg.nii']);
+% sct_unix(cmd)
 
-cmd=(['sct_apply_transfo -i data_1.nii -d data_2_1.nii.gz -w warp_data_1_12data_2_1.nii.gz -o data_1_reg.nii']);
-sct_unix(cmd)
 
 files = sct_splitTandrename('data_1.nii');
 for ifile = 1:length(files)

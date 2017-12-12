@@ -19,7 +19,7 @@ j_disp(log_spline,['\nSmoothing Patient Motion...'])
 Z_index=double(round(cellfun(@(x) cell2mat(textscan(x,'%*[mat.T]%*u%*[_Z]%u%*[.txt]')),list)));
 T=cellfun(@(x) cell2mat(textscan(x,'%*[mat.T]%u%*[_Z]%*u%*[.txt]')),list); T=single(T);
 j_progress('loading matrix...')
-for imat=1:length(list), j_progress(imat/length(list)); M_tmp{imat}=load([path list{imat}]); X(imat)=M_tmp{imat}(1,4); Y(imat)=M_tmp{imat}(2,4); end
+for imat=1:length(list), j_progress(imat/length(list)); M_tmp{imat}=load([path{imat} list{imat}]); X(imat)=M_tmp{imat}(1,4); Y(imat)=M_tmp{imat}(2,4); end
 j_progress('elapsed')
 
 color=jet(max(Z_index));

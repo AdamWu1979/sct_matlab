@@ -10,5 +10,5 @@ end
 
 vol2=[fname '_2.nii.gz'];
 if max(ismember(part,2))
-    unix(['fslroi ' fname ' ' vol2 ' ' num2str(vol+1) ' -1']);
+    unix(['fslroi ' fname ' ' vol2 ' ' num2str(vol) ' -1']);
 end
