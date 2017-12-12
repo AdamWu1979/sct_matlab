@@ -17,7 +17,7 @@ ext = '.nii.gz';
 path = [path filesep];
 
 
-[~,dim] = read_avw(fname);
+dim=size(load_nii_data(fname));
 % split by Z
 cmd = ['fslsplit ' fname ' ' path file 'T -t'];
 sct_unix(cmd);

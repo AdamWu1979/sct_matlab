@@ -1,6 +1,6 @@
 
 function sct_tools_merge_text_files(text_files, output,transpose)
-% sct_merge_text_files('fsems_*.bvec', output, transpose?)
+% sct_tools_merge_text_files('fsems_*.bvec', output, transpose?)
 
 if ~iscell(text_files)
 list_text=sct_tools_ls(text_files,1);
